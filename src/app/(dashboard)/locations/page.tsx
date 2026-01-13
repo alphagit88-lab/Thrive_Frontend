@@ -95,14 +95,24 @@ export default function LocationsPage() {
   };
 
   const columns = [
-    { key: 'id', label: 'Location ID', render: (id: string) => id.substring(0, 8) + '...' },
+    {
+      key: 'id',
+      label: 'Location ID',
+      render: (value: unknown) => {
+        const id = value as string;
+        return id.substring(0, 8) + '...';
+      },
+    },
     { key: 'name', label: 'Location Name' },
     { key: 'currency', label: 'Currency' },
     { key: 'location_type', label: 'Location Type' },
     {
       key: 'status',
       label: 'Status',
-      render: (status: string) => <Badge status={status as 'active' | 'inactive'}>{status}</Badge>,
+      render: (value: unknown) => {
+        const status = value as string;
+        return <Badge status={status as 'active' | 'inactive'}>{status}</Badge>;
+      },
     },
   ];
 

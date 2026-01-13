@@ -53,11 +53,14 @@ export default function DashboardPage() {
       render: (items: Array<{ menu_item_name?: string }>) => items?.[0]?.menu_item_name || 'N/A' 
     },
     { key: 'customer_name', label: 'Customer Name' },
-    {
-      key: 'status',
-      label: 'Status',
-      render: (status: string) => <Badge status={status as 'received' | 'preparing' | 'ready' | 'delivered' | 'cancelled' | 'active' | 'inactive' | 'draft' | 'suspended'}>{status}</Badge>,
-    },
+        {
+          key: 'status',
+          label: 'Status',
+          render: (value: unknown) => {
+            const status = value as string;
+            return <Badge status={status as 'received' | 'preparing' | 'ready' | 'delivered' | 'cancelled' | 'active' | 'inactive' | 'draft' | 'suspended'}>{status}</Badge>;
+          },
+        },
   ];
 
   if (!locationId) {
@@ -70,9 +73,24 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-        <p className="text-sm text-gray-500 mt-1">Dashboard &gt; Analytics</p>
+      <div className="mb-6 flex items-center justify-between">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
+          <p className="text-sm text-gray-500 mt-1">Dashboard &gt; Analytics</p>
+        </div>
+        
+        {/* Profile Section */}
+        <div className="bg-gray-100 rounded-lg px-4 py-3 flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center shrink-0">
+            <svg className="w-7 h-7 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
+            </svg>
+          </div>
+          <div>
+            <p className="font-semibold text-sm text-gray-900">NutriMojo</p>
+            <p className="text-xs text-gray-500">admin</p>
+          </div>
+        </div>
       </div>
 
       {/* KPI Cards */}
