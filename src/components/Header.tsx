@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { Search, Bell, User } from 'lucide-react';
+import { Search, Bell, User, ChevronDown } from 'lucide-react';
 import { Location } from '@/types';
 import { locationsService } from '@/services/locations.service';
 
@@ -19,10 +19,6 @@ export default function Header({
 
   useEffect(() => {
     loadLocations();
-    const savedLocationId = localStorage.getItem('locationId');
-    if (savedLocationId) {
-      setLocationId(savedLocationId);
-    }
   }, []);
 
   const loadLocations = async () => {
@@ -30,8 +26,14 @@ export default function Header({
       const response = await locationsService.getAll();
       if (response.success && response.data) {
         setLocations(response.data);
-        // Auto-select first location if none selected
-        if (!localStorage.getItem('locationId') && response.data.length > 0) {
+        
+        // Get saved location or default to first location
+        const savedLocationId = localStorage.getItem('locationId');
+        if (savedLocationId && response.data.find((loc) => loc.id === savedLocationId)) {
+          // Use saved location if it still exists
+          setLocationId(savedLocationId);
+        } else if (response.data.length > 0) {
+          // Auto-select first location as default
           const firstLocation = response.data[0];
           setLocationId(firstLocation.id);
           localStorage.setItem('locationId', firstLocation.id);
@@ -72,18 +74,21 @@ export default function Header({
         <div className="flex items-center gap-4">
           {/* Location Selector */}
           {locations.length > 0 && (
-            <select
-              value={locationId || ''}
-              onChange={(e) => handleLocationChange(e.target.value)}
-              className="px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="">Select Location</option>
-              {locations.map((loc) => (
-                <option key={loc.id} value={loc.id}>
-                  {loc.name}
-                </option>
-              ))}
-            </select>
+            <div className="relative">
+              <select
+                value={locationId || ''}
+                onChange={(e) => handleLocationChange(e.target.value)}
+                className="appearance-none px-4 py-2 pr-10 border-2 border-green-500 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 bg-white text-gray-900 font-medium cursor-pointer min-w-[180px]"
+              >
+                <option value="">Select Location</option>
+                {locations.map((loc) => (
+                  <option key={loc.id} value={loc.id}>
+                    {loc.name}
+                  </option>
+                ))}
+              </select>
+              <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-gray-600 pointer-events-none" />
+            </div>
           )}
 
           {/* Notifications */}
