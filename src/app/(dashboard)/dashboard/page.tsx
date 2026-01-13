@@ -50,17 +50,20 @@ export default function DashboardPage() {
     { 
       key: 'items', 
       label: 'Prep Name', 
-      render: (items: Array<{ menu_item_name?: string }>) => items?.[0]?.menu_item_name || 'N/A' 
+      render: (_value: unknown, row: Order) => {
+        const items = row.items || [];
+        return items?.[0]?.menu_item_name || 'N/A';
+      }
     },
     { key: 'customer_name', label: 'Customer Name' },
-        {
-          key: 'status',
-          label: 'Status',
-          render: (value: unknown) => {
-            const status = value as string;
-            return <Badge status={status as 'received' | 'preparing' | 'ready' | 'delivered' | 'cancelled' | 'active' | 'inactive' | 'draft' | 'suspended'}>{status}</Badge>;
-          },
-        },
+    {
+      key: 'status',
+      label: 'Status',
+      render: (value: unknown) => {
+        const status = value as string;
+        return <Badge status={status as 'received' | 'preparing' | 'ready' | 'delivered' | 'cancelled' | 'active' | 'inactive' | 'draft' | 'suspended'}>{status}</Badge>;
+      },
+    },
   ];
 
   if (!locationId) {

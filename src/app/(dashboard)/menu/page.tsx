@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect, useState, useRef, startTransition, useCallback } from 'react';
+import Image from 'next/image';
 import { menuService } from '@/services/menu.service';
 import { settingsService } from '@/services/settings.service';
 import { MenuItem, MenuItemForm, FoodCategory, FoodType, Specification, CookType } from '@/types';
@@ -49,8 +50,8 @@ export default function MenuPage() {
       if (response.success && response.data) {
         // Deduplicate menu items by ID to prevent duplicate key errors
         // Use a Map to ensure true uniqueness
-        const itemsMap = new Map<string, typeof response.data[0]>();
-        response.data.forEach((item) => {
+        const itemsMap = new Map<string, MenuItem>();
+        response.data.forEach((item: MenuItem) => {
           if (!itemsMap.has(item.id)) {
             itemsMap.set(item.id, item);
           }
@@ -59,7 +60,7 @@ export default function MenuPage() {
         setMenuItems(uniqueItems);
         // Initialize editing state for each item
         const editing: Record<string, MenuItemForm> = {};
-        uniqueItems.forEach((item) => {
+        uniqueItems.forEach((item: MenuItem) => {
           editing[item.id] = {
             location_id: item.location_id,
             name: item.name,
@@ -73,8 +74,8 @@ export default function MenuPage() {
             tags: item.tags || '',
             prep_workout: item.prep_workout || '',
             status: item.status,
-            photos: item.photos?.map((p) => p.photo_url) || [],
-            ingredients: item.ingredients?.map((ing) => ({
+            photos: item.photos?.map((p: { photo_url: string }) => p.photo_url) || [],
+            ingredients: item.ingredients?.map((ing: { ingredient_id: string; ingredient_quantity_id?: string; custom_quantity?: string }) => ({
               ingredient_id: ing.ingredient_id,
               ingredient_quantity_id: ing.ingredient_quantity_id || undefined,
               custom_quantity: ing.custom_quantity || undefined,
@@ -196,6 +197,7 @@ export default function MenuPage() {
         description: itemData.description || undefined,
         tags: itemData.tags || undefined,
         prep_workout: itemData.prep_workout || undefined,
+        photos: itemData.photos || undefined,
       };
 
       await menuService.update(itemId, updateData);
@@ -251,6 +253,62 @@ export default function MenuPage() {
       tags.push(tag.trim());
       handleItemChange(itemId, 'tags', tags.join(','));
     }
+  };
+
+  const handlePhotoUpload = (itemId: string, e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = e.target.files;
+    if (!files || files.length === 0) return;
+
+    const item = editingItems[itemId];
+    const currentPhotos = item.photos || [];
+
+    // Filter only image files
+    const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
+    
+    if (imageFiles.length === 0) {
+      alert('Please select image files only.');
+      e.target.value = '';
+      return;
+    }
+
+    // Convert files to base64 data URLs
+    const newPhotos: string[] = [];
+    let processedCount = 0;
+    const totalFiles = imageFiles.length;
+
+    imageFiles.forEach((file) => {
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        if (event.target?.result) {
+          newPhotos.push(event.target.result as string);
+          processedCount++;
+
+          // When all files are processed, update state
+          if (processedCount === totalFiles) {
+            handleItemChange(itemId, 'photos', [...currentPhotos, ...newPhotos]);
+          }
+        }
+      };
+      reader.onerror = () => {
+        console.error('Failed to read file:', file.name);
+        alert(`Failed to read file: ${file.name}`);
+        processedCount++;
+        if (processedCount === totalFiles && newPhotos.length > 0) {
+          handleItemChange(itemId, 'photos', [...currentPhotos, ...newPhotos]);
+        }
+      };
+      reader.readAsDataURL(file);
+    });
+
+    // Reset input
+    e.target.value = '';
+  };
+
+  const handleRemovePhoto = (itemId: string, photoIndex: number) => {
+    const item = editingItems[itemId];
+    const photos = item.photos || [];
+    photos.splice(photoIndex, 1);
+    handleItemChange(itemId, 'photos', photos);
   };
 
   // Handle 3-dots menu click
@@ -554,10 +612,46 @@ export default function MenuPage() {
                   {/* Photos */}
                   <div>
                     <label className="text-xs text-gray-500 block mb-1">Photos</label>
-                    <Button variant="outline" size="sm" className="w-full">
+                    <input
+                      type="file"
+                      accept="image/*"
+                      multiple
+                      id={`photo-upload-${item.id}`}
+                      className="hidden"
+                      onChange={(e) => handlePhotoUpload(item.id, e)}
+                    />
+                    <Button
+                      type="button"
+                      variant="outline"
+                      size="sm"
+                      className="w-full"
+                      onClick={() => document.getElementById(`photo-upload-${item.id}`)?.click()}
+                    >
                       <Upload className="w-4 h-4 mr-2 inline" />
                       UPLOAD PHOTOS
                     </Button>
+                    {itemData.photos && itemData.photos.length > 0 && (
+                      <div className="mt-2 grid grid-cols-3 gap-2">
+                        {itemData.photos.map((photo, photoIdx) => (
+                          <div key={photoIdx} className="relative group w-full h-20">
+                            <Image
+                              src={photo}
+                              alt={`Photo ${photoIdx + 1}`}
+                              fill
+                              className="object-cover rounded border border-gray-300"
+                              unoptimized={photo.startsWith('data:')}
+                            />
+                            <button
+                              type="button"
+                              onClick={() => handleRemovePhoto(item.id, photoIdx)}
+                              className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 opacity-0 group-hover:opacity-100 transition-opacity z-10"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </div>
+                        ))}
+                      </div>
+                    )}
                   </div>
 
                   {/* Price */}
