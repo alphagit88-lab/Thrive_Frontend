@@ -2,12 +2,21 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Location, User } from 'lucide-react';
+import { 
+  BarChart3, 
+  UtensilsCrossed, 
+  Pizza, 
+  ClipboardList, 
+  Users, 
+  User, 
+  Settings, 
+  MapPin
+} from 'lucide-react';
 
 interface NavItem {
   id: string;
   label: string;
-  icon: string;
+  icon: React.ReactNode;
   path: string;
 }
 
@@ -20,14 +29,14 @@ interface SidebarProps {
 }
 
 const navItems: NavItem[] = [
-  { id: 'dashboard', label: 'Analytics', icon: '📊', path: '/dashboard' },
-  { id: 'ingredients', label: 'Ingredients', icon: '🍴', path: '/ingredients' },
-  { id: 'menu', label: 'Menu', icon: '🍕', path: '/menu' },
-  { id: 'orders', label: 'Orders', icon: '📋', path: '/orders' },
-  { id: 'customers', label: 'Customers', icon: '👥', path: '/customers' },
-  { id: 'users', label: 'Users', icon: '👤', path: '/users' },
-  { id: 'settings', label: 'Settings', icon: '⚙️', path: '/settings' },
-  { id: 'locations', label: 'Locations', icon: '📍', path: '/locations' },
+  { id: 'dashboard', label: 'Analytics', icon: <BarChart3 className="w-5 h-5" />, path: '/dashboard' },
+  { id: 'ingredients', label: 'Ingredients', icon: <UtensilsCrossed className="w-5 h-5" />, path: '/ingredients' },
+  { id: 'menu', label: 'Menu', icon: <Pizza className="w-5 h-5" />, path: '/menu' },
+  { id: 'orders', label: 'Orders', icon: <ClipboardList className="w-5 h-5" />, path: '/orders' },
+  { id: 'customers', label: 'Customers', icon: <Users className="w-5 h-5" />, path: '/customers' },
+  { id: 'users', label: 'Users', icon: <User className="w-5 h-5" />, path: '/users' },
+  { id: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5" />, path: '/settings' },
+  { id: 'locations', label: 'Locations', icon: <MapPin className="w-5 h-5" />, path: '/locations' },
 ];
 
 export default function Sidebar({ user }: SidebarProps) {
@@ -37,23 +46,21 @@ export default function Sidebar({ user }: SidebarProps) {
     <div className="w-64 bg-gray-50 min-h-screen flex flex-col">
       {/* Logo */}
       <div className="p-6 border-b">
-        <h1 className="text-2xl font-bold text-green-600">THRIVE</h1>
+        <h1 className="text-2xl font-bold text-green-600">Thrive</h1>
       </div>
 
       {/* User Profile */}
-      {user && (
-        <div className="p-4 border-b bg-gray-100">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-gray-300 flex items-center justify-center">
-              <User className="w-6 h-6 text-gray-600" />
-            </div>
-            <div>
-              <p className="font-semibold text-sm">{user.name}</p>
-              <p className="text-xs text-gray-500">{user.role}</p>
-            </div>
+      <div className="p-4 border-b bg-gray-100 rounded-lg mx-4 mt-4">
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center shrink-0">
+            <User className="w-7 h-7 text-gray-600" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="font-semibold text-sm text-gray-900 truncate">{user?.name || 'ThriveAdmin'}</p>
+            <p className="text-xs text-gray-500">{user?.role || 'admin'}</p>
           </div>
         </div>
-      )}
+      </div>
 
       {/* Navigation */}
       <nav className="flex-1 p-4">
@@ -71,7 +78,9 @@ export default function Sidebar({ user }: SidebarProps) {
                       : 'text-gray-700 hover:bg-gray-100'
                   }`}
                 >
-                  <span className="text-lg">{item.icon}</span>
+                  <span className={isActive ? 'text-green-700' : 'text-gray-700'}>
+                    {item.icon}
+                  </span>
                   <span className="text-sm">{item.label}</span>
                 </Link>
               </li>
