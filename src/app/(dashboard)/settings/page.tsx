@@ -5,7 +5,7 @@ import { settingsService } from '@/services/settings.service';
 import { FoodCategory, FoodType, Specification, CookType } from '@/types';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
-import { Plus, MoreVertical, Trash2, Pencil } from 'lucide-react';
+import { Plus, MoreVertical } from 'lucide-react';
 
 export default function SettingsPage() {
   const [categories, setCategories] = useState<FoodCategory[]>([]);
@@ -94,6 +94,14 @@ export default function SettingsPage() {
       console.error('Failed to create cook type:', error);
     }
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-gray-500">Loading settings...</div>
+      </div>
+    );
+  }
 
   return (
     <div>

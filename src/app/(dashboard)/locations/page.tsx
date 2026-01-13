@@ -1,13 +1,13 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { locationsService } from '@/services/locations.service';
 import { Location, LocationForm } from '@/types';
 import DataTable from '@/components/DataTable';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
 import Badge from '@/components/Badge';
-import { Plus, Pencil, Trash2, MoreVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2 } from 'lucide-react';
 
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -24,11 +24,7 @@ export default function LocationsPage() {
     status: 'active',
   });
 
-  useEffect(() => {
-    loadLocations();
-  }, []);
-
-  const loadLocations = async () => {
+  const loadLocations = useCallback(async () => {
     try {
       setLoading(true);
       const response = await locationsService.getAll({ search });
@@ -40,7 +36,11 @@ export default function LocationsPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search]);
+
+  useEffect(() => {
+    loadLocations();
+  }, [loadLocations]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -102,7 +102,7 @@ export default function LocationsPage() {
     {
       key: 'status',
       label: 'Status',
-      render: (status: string) => <Badge status={status as any}>{status}</Badge>,
+      render: (status: string) => <Badge status={status as 'active' | 'inactive'}>{status}</Badge>,
     },
   ];
 
@@ -246,7 +246,7 @@ export default function LocationsPage() {
             <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
             <select
               value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as any })}
+              onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
               className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
             >
               <option value="active">Active</option>

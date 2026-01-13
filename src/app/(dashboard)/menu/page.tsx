@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { menuService } from '@/services/menu.service';
 import { MenuItem, MenuItemForm } from '@/types';
 import Button from '@/components/Button';
@@ -31,15 +31,7 @@ export default function MenuPage() {
     ingredients: [],
   });
 
-  useEffect(() => {
-    const savedLocationId = localStorage.getItem('locationId');
-    if (savedLocationId) {
-      setLocationId(savedLocationId);
-      loadMenuItems(savedLocationId);
-    }
-  }, []);
-
-  const loadMenuItems = async (locId: string) => {
+  const loadMenuItems = useCallback(async (locId: string) => {
     try {
       setLoading(true);
       const response = await menuService.getAll({ location_id: locId, search });
@@ -51,7 +43,15 @@ export default function MenuPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search]);
+
+  useEffect(() => {
+    const savedLocationId = localStorage.getItem('locationId');
+    if (savedLocationId) {
+      setLocationId(savedLocationId);
+      loadMenuItems(savedLocationId);
+    }
+  }, [loadMenuItems]);
 
   const handleSubmit = async () => {
     try {
@@ -97,8 +97,13 @@ export default function MenuPage() {
       </div>
 
       {/* Menu Items Grid */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        {menuItems.map((item) => (
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-gray-500">Loading menu items...</div>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          {menuItems.map((item) => (
           <div key={item.id} className="bg-white rounded-lg shadow p-6">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold">ID #{item.display_id || item.id.substring(0, 8)}</h3>
@@ -135,7 +140,8 @@ export default function MenuPage() {
             </div>
           </div>
         ))}
-      </div>
+        </div>
+      )}
 
       {/* Add Menu Item Modal */}
       <Modal

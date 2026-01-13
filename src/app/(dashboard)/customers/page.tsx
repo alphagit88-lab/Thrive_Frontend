@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { customersService } from '@/services/customers.service';
 import { Customer } from '@/types';
 import DataTable from '@/components/DataTable';
@@ -14,15 +14,7 @@ export default function CustomersPage() {
   const [locationId, setLocationId] = useState<string>('');
   const [search, setSearch] = useState('');
 
-  useEffect(() => {
-    const savedLocationId = localStorage.getItem('locationId');
-    if (savedLocationId) {
-      setLocationId(savedLocationId);
-      loadCustomers(savedLocationId);
-    }
-  }, []);
-
-  const loadCustomers = async (locId: string) => {
+  const loadCustomers = useCallback(async (locId: string) => {
     try {
       setLoading(true);
       const response = await customersService.getAll({ location_id: locId, search });
@@ -34,7 +26,15 @@ export default function CustomersPage() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [search]);
+
+  useEffect(() => {
+    const savedLocationId = localStorage.getItem('locationId');
+    if (savedLocationId) {
+      setLocationId(savedLocationId);
+      loadCustomers(savedLocationId);
+    }
+  }, [loadCustomers]);
 
   const columns = [
     { key: 'email', label: 'Email' },
@@ -43,7 +43,7 @@ export default function CustomersPage() {
     {
       key: 'account_status',
       label: 'Account Status',
-      render: (status: string) => <Badge status={status as any}>{status}</Badge>,
+      render: (status: string) => <Badge status={status as 'active' | 'inactive' | 'suspended'}>{status}</Badge>,
     },
     { key: 'created_at', label: 'Date Created', render: (date: string) => new Date(date).toLocaleDateString() },
     { key: 'total_preps', label: 'Total Preps' },

@@ -67,7 +67,7 @@ export default function IngredientsPage() {
       if (ingRes.success && ingRes.data) {
         // Flatten ingredients from grouped data
         const allIngredients: Ingredient[] = [];
-        ingRes.data.forEach((group: any) => {
+        ingRes.data.forEach((group: { ingredients?: Ingredient[] }) => {
           if (group.ingredients) {
             allIngredients.push(...group.ingredients);
           }
@@ -124,7 +124,7 @@ export default function IngredientsPage() {
     });
   };
 
-  const handleQuantityChange = (index: number, field: string, value: any) => {
+  const handleQuantityChange = (index: number, field: string, value: string | number | boolean) => {
     const newQuantities = [...formData.quantities];
     newQuantities[index] = { ...newQuantities[index], [field]: value };
     setFormData({ ...formData, quantities: newQuantities });
@@ -172,7 +172,11 @@ export default function IngredientsPage() {
       </div>
 
       {/* Ingredients List or Empty State */}
-      {categoryIngredients.length === 0 ? (
+      {loading ? (
+        <div className="flex items-center justify-center py-12">
+          <div className="text-gray-500">Loading ingredients...</div>
+        </div>
+      ) : categoryIngredients.length === 0 ? (
         <EmptyState
           icon={<ShoppingBasket className="w-16 h-16 text-gray-400" />}
           title="There are no ingredients Added"

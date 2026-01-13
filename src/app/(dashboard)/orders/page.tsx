@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import { ordersService } from '@/services/orders.service';
-import { Order } from '@/types';
+import { Order, OrderItem } from '@/types';
 import DataTable from '@/components/DataTable';
 import Button from '@/components/Button';
 import Badge from '@/components/Badge';
@@ -40,13 +40,13 @@ export default function OrdersPage() {
     {
       key: 'items',
       label: 'Prep Name',
-      render: (items: any[]) => items?.[0]?.menu_item_name || 'N/A',
+      render: (items: OrderItem[]) => items?.[0]?.menu_item_name || 'N/A',
     },
     { key: 'order_date', label: 'Order Date', render: (date: string) => new Date(date).toLocaleDateString() },
     {
       key: 'status',
       label: 'Order Status',
-      render: (status: string) => <Badge status={status as any}>{status}</Badge>,
+      render: (status: string) => <Badge status={status as 'received' | 'preparing' | 'ready' | 'delivered' | 'cancelled'}>{status}</Badge>,
     },
     { key: 'total_price', label: 'Price', render: (price: number) => `LKR ${price.toLocaleString()}` },
   ];
