@@ -1,4 +1,4 @@
-'use client';
+"use client";
 
 interface Column<T> {
   key: keyof T | string;
@@ -20,7 +20,7 @@ export default function DataTable<T extends { id: string }>({
   columns,
   data,
   loading = false,
-  emptyMessage = 'No data available',
+  emptyMessage = "No data available",
   onRowClick,
   actions,
 }: DataTableProps<T>) {
@@ -45,13 +45,20 @@ export default function DataTable<T extends { id: string }>({
                 {column.label}
               </th>
             ))}
-            {actions && <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">Actions</th>}
+            {actions && (
+              <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                Actions
+              </th>
+            )}
           </tr>
         </thead>
         <tbody className="bg-white divide-y divide-gray-200">
           {data.length === 0 ? (
             <tr>
-              <td colSpan={columns.length + (actions ? 1 : 0)} className="px-6 py-12 text-center text-gray-500">
+              <td
+                colSpan={columns.length + (actions ? 1 : 0)}
+                className="px-6 py-12 text-center text-gray-500"
+              >
                 {emptyMessage}
               </td>
             </tr>
@@ -60,13 +67,19 @@ export default function DataTable<T extends { id: string }>({
               <tr
                 key={row.id}
                 onClick={() => onRowClick?.(row)}
-                className={onRowClick ? 'cursor-pointer hover:bg-gray-50' : ''}
+                className={onRowClick ? "cursor-pointer hover:bg-gray-50" : ""}
               >
                 {columns.map((column, colIndex) => {
-                  const value = column.key in row ? (row as Record<string, unknown>)[column.key] : undefined;
+                  // FIX: Cast row to 'any' to allow indexing with string keys
+                  const value = (row as any)[column.key];
                   return (
-                    <td key={`${row.id}-col-${colIndex}-${String(column.key)}`} className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                      {column.render ? column.render(value, row) : String(value || '')}
+                    <td
+                      key={`${row.id}-col-${colIndex}-${String(column.key)}`}
+                      className="px-6 py-4 whitespace-nowrap text-sm text-gray-900"
+                    >
+                      {column.render
+                        ? column.render(value, row)
+                        : String(value || "")}
                     </td>
                   );
                 })}
@@ -83,4 +96,3 @@ export default function DataTable<T extends { id: string }>({
     </div>
   );
 }
-
