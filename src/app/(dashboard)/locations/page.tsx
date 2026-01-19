@@ -125,15 +125,11 @@ export default function LocationsPage() {
       {/* Modern Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg shadow-green-500/20">
+          <div className="p-3 bg-linear-to-br from-green-500 to-green-600 rounded-xl shadow-lg shadow-green-500/20">
             <MapPin className="w-6 h-6 text-white" />
           </div>
           <div>
             <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Locations</h1>
-            <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
-              <Building2 className="w-3.5 h-3.5" />
-              Manage your business locations
-            </p>
             <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
             Dashboard &gt; Locations &gt; List
           </p>
@@ -141,7 +137,7 @@ export default function LocationsPage() {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105 active:scale-100 min-w-[160px] h-[48px]"
+          className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-linear-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105 active:scale-100 min-w-[160px] h-[48px]"
         >
           <div className="p-1 bg-white/20 rounded-lg">
             <Plus className="w-4 h-4" />
@@ -166,7 +162,7 @@ export default function LocationsPage() {
 
       {/* Modern Table Card */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+        <div className="px-6 py-4 bg-linear -to-r from-gray-50 to-white border-b border-gray-100">
           <div className="flex items-center gap-2">
             <Building2 className="w-5 h-5 text-gray-600" />
             <h2 className="text-lg font-semibold text-gray-800">All Locations</h2>
