@@ -37,6 +37,15 @@ apiClient.interceptors.response.use(
       // Server responded with error
       const message = error.response.data?.error || error.response.data?.message || error.message;
       console.error('API Error:', message);
+      
+      // Handle 401 Unauthorized - redirect to login
+      if (error.response.status === 401) {
+        // Only redirect if not already on login page
+        if (typeof window !== 'undefined' && !window.location.pathname.includes('/login')) {
+          localStorage.removeItem('token');
+          window.location.href = '/login';
+        }
+      }
     } else if (error.request) {
       // Request made but no response
       console.error('Network Error:', 'No response from server');

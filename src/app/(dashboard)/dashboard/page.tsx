@@ -83,17 +83,7 @@ export default function DashboardPage() {
         </div>
         
         {/* Profile Section */}
-        <div className="bg-gray-100 rounded-lg px-4 py-3 flex items-center gap-3">
-          <div className="w-12 h-12 rounded-full bg-gray-300 flex items-center justify-center shrink-0">
-            <svg className="w-7 h-7 text-gray-600" fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clipRule="evenodd" />
-            </svg>
-          </div>
-          <div>
-            <p className="font-semibold text-sm text-gray-900">NutriMojo</p>
-            <p className="text-xs text-gray-500">admin</p>
-          </div>
-        </div>
+        
       </div>
 
       {/* KPI Cards */}
