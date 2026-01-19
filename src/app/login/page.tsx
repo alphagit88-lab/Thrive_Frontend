@@ -1,9 +1,11 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter, useSearchParams } from 'next/navigation';
+import { useRouter } from 'next/navigation';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -13,14 +15,6 @@ export default function LoginPage() {
   const [loading, setLoading] = useState(false);
   const { login, user } = useAuth();
   const router = useRouter();
-  const searchParams = useSearchParams();
-
-  useEffect(() => {
-    // Clear any query parameters
-    if (searchParams.toString()) {
-      router.replace('/login');
-    }
-  }, [searchParams, router]);
 
   // Redirect if already logged in
   useEffect(() => {
