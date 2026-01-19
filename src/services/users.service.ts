@@ -6,6 +6,12 @@ import apiClient from '@/lib/api';
 import { User, UserForm, ApiResponse } from '@/types';
 
 export const usersService = {
+  // POST /api/users/signup
+  signup: async (data: { name: string; email: string; password: string; contact_number?: string }): Promise<ApiResponse<User>> => {
+    const response = await apiClient.post<ApiResponse<User>>('/users/signup', data);
+    return response.data;
+  },
+
   // POST /api/users/login
   login: async (email: string, password: string): Promise<ApiResponse<{ user: User; token: string }>> => {
     const response = await apiClient.post<ApiResponse<{ user: User; token: string }>>('/users/login', { email, password });
