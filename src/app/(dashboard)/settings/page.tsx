@@ -5,7 +5,7 @@ import { settingsService } from '@/services/settings.service';
 import { FoodCategory, FoodType, Specification, CookType } from '@/types';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
-import { Plus, MoreVertical, Pencil, Trash2 } from 'lucide-react';
+import { Plus, MoreVertical, Pencil, Trash2, Settings, UtensilsCrossed, Tag, ChefHat, Sparkles } from 'lucide-react';
 
 export default function SettingsPage() {
   const [categories, setCategories] = useState<FoodCategory[]>([]);
@@ -270,211 +270,346 @@ export default function SettingsPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center h-64">
-        <div className="text-gray-500">Loading settings...</div>
+        <div className="flex flex-col items-center gap-3">
+          <div className="w-8 h-8 border-4 border-green-500 border-t-transparent rounded-full animate-spin"></div>
+          <div className="text-gray-500 font-medium">Loading settings...</div>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Settings</h1>
-        <p className="text-sm text-gray-500 mt-1">Dashboard &gt; Settings &gt; List</p>
+    <div className="space-y-6">
+      {/* Modern Header */}
+      <div className="flex items-center gap-3">
+        <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg shadow-green-500/20">
+          <Settings className="w-6 h-6 text-white" />
+        </div>
+        <div>
+          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Settings</h1>
+          
+          <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+            Dashboard &gt; Settings &gt; List
+          </p>
+        </div>
       </div>
 
       {/* Food Categories */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Food category</h2>
-          <Button onClick={() => {
-            resetCategoryModal();
-            setCategoryModalOpen(true);
-          }} variant="primary" size="sm">
-            <Plus className="w-4 h-4 mr-1 inline" />
-            ADD
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {categories.map((cat) => (
-            <div key={cat.id} className="border rounded-lg p-4 relative hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium">{cat.name}</h3>
-                <div className="relative">
-                  <button
-                    onClick={(e) => handleMenuClick('category', cat.id, e)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                  {openMenu?.type === 'category' && openMenu?.id === cat.id && (
-                    <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                      <button
-                        onClick={() => handleEditCategory(cat)}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                      >
-                        <Pencil className="w-4 h-4" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCategory(cat.id)}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-blue-500 rounded-lg">
+                <UtensilsCrossed className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">Food Categories</h2>
+                <p className="text-xs text-gray-500 mt-0.5">{categories.length} categories</p>
               </div>
             </div>
-          ))}
+            <button
+              onClick={() => {
+                resetCategoryModal();
+                setCategoryModalOpen(true);
+              }}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Category</span>
+            </button>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {categories.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                  <UtensilsCrossed className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">No categories yet</p>
+                <p className="text-sm text-gray-400 mt-1">Add your first category to get started</p>
+              </div>
+            ) : (
+              categories.map((cat) => (
+                <div
+                  key={cat.id}
+                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-white to-gray-50 hover:border-blue-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-800 truncate">{cat.name}</h3>
+                      {cat.display_order !== undefined && (
+                        <p className="text-xs text-gray-500 mt-1">Order: {cat.display_order}</p>
+                      )}
+                    </div>
+                    <div className="relative ml-2">
+                      <button
+                        onClick={(e) => handleMenuClick('category', cat.id, e)}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                      {openMenu?.type === 'category' && openMenu?.id === cat.id && (
+                        <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-200 z-20 overflow-hidden">
+                          <button
+                            onClick={() => handleEditCategory(cat)}
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-blue-50 flex items-center gap-2 transition-colors"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCategory(cat.id)}
+                            className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
       {/* Food Types */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Food Types</h2>
-          <Button onClick={() => {
-            resetTypeModal();
-            setTypeModalOpen(true);
-          }} variant="primary" size="sm">
-            <Plus className="w-4 h-4 mr-1 inline" />
-            ADD
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {types.map((type) => (
-            <div key={type.id} className="border rounded-lg p-4 relative hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium">{type.name}</h3>
-                <div className="relative">
-                  <button
-                    onClick={(e) => handleMenuClick('type', type.id, e)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                  {openMenu?.type === 'type' && openMenu?.id === type.id && (
-                    <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                      <button
-                        onClick={() => handleEditType(type)}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                      >
-                        <Pencil className="w-4 h-4" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteType(type.id)}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-green-500 rounded-lg">
+                <Tag className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">Food Types</h2>
+                <p className="text-xs text-gray-500 mt-0.5">{types.length} types</p>
               </div>
             </div>
-          ))}
+            <button
+              onClick={() => {
+                resetTypeModal();
+                setTypeModalOpen(true);
+              }}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-md shadow-green-500/30 hover:shadow-lg hover:shadow-green-500/40 hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Type</span>
+            </button>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {types.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                  <Tag className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">No food types yet</p>
+                <p className="text-sm text-gray-400 mt-1">Add your first food type to get started</p>
+              </div>
+            ) : (
+              types.map((type) => (
+                <div
+                  key={type.id}
+                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-white to-gray-50 hover:border-green-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-800 truncate">{type.name}</h3>
+                    </div>
+                    <div className="relative ml-2">
+                      <button
+                        onClick={(e) => handleMenuClick('type', type.id, e)}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                      {openMenu?.type === 'type' && openMenu?.id === type.id && (
+                        <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-200 z-20 overflow-hidden">
+                          <button
+                            onClick={() => handleEditType(type)}
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-green-50 flex items-center gap-2 transition-colors"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteType(type.id)}
+                            className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
       {/* Specifications */}
-      <div className="bg-white rounded-lg shadow p-6 mb-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Specifications</h2>
-          <Button onClick={() => {
-            resetSpecModal();
-            setSpecModalOpen(true);
-          }} variant="primary" size="sm">
-            <Plus className="w-4 h-4 mr-1 inline" />
-            ADD
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {specifications.map((spec) => (
-            <div key={spec.id} className="border rounded-lg p-4 relative hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium">{spec.name}</h3>
-                <div className="relative">
-                  <button
-                    onClick={(e) => handleMenuClick('spec', spec.id, e)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                  {openMenu?.type === 'spec' && openMenu?.id === spec.id && (
-                    <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                      <button
-                        onClick={() => handleEditSpec(spec)}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                      >
-                        <Pencil className="w-4 h-4" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteSpec(spec.id)}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="px-6 py-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-orange-500 rounded-lg">
+                <Sparkles className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">Specifications</h2>
+                <p className="text-xs text-gray-500 mt-0.5">{specifications.length} specifications</p>
               </div>
             </div>
-          ))}
+            <button
+              onClick={() => {
+                resetSpecModal();
+                setSpecModalOpen(true);
+              }}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-md shadow-orange-500/30 hover:shadow-lg hover:shadow-orange-500/40 hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Specification</span>
+            </button>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {specifications.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                  <Sparkles className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">No specifications yet</p>
+                <p className="text-sm text-gray-400 mt-1">Add your first specification to get started</p>
+              </div>
+            ) : (
+              specifications.map((spec) => (
+                <div
+                  key={spec.id}
+                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-white to-gray-50 hover:border-orange-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-800 truncate">{spec.name}</h3>
+                    </div>
+                    <div className="relative ml-2">
+                      <button
+                        onClick={(e) => handleMenuClick('spec', spec.id, e)}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                      {openMenu?.type === 'spec' && openMenu?.id === spec.id && (
+                        <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-200 z-20 overflow-hidden">
+                          <button
+                            onClick={() => handleEditSpec(spec)}
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-orange-50 flex items-center gap-2 transition-colors"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteSpec(spec.id)}
+                            className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
       {/* Cook Types */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <div className="flex items-center justify-between mb-4">
-          <h2 className="text-lg font-semibold">Cook Types</h2>
-          <Button onClick={() => {
-            resetCookTypeModal();
-            setCookTypeModalOpen(true);
-          }} variant="primary" size="sm">
-            <Plus className="w-4 h-4 mr-1 inline" />
-            ADD
-          </Button>
-        </div>
-        <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
-          {cookTypes.map((cook) => (
-            <div key={cook.id} className="border rounded-lg p-4 relative hover:shadow-md transition-shadow">
-              <div className="flex items-center justify-between">
-                <h3 className="font-medium">{cook.name}</h3>
-                <div className="relative">
-                  <button
-                    onClick={(e) => handleMenuClick('cookType', cook.id, e)}
-                    className="text-gray-400 hover:text-gray-600"
-                  >
-                    <MoreVertical className="w-4 h-4" />
-                  </button>
-                  {openMenu?.type === 'cookType' && openMenu?.id === cook.id && (
-                    <div className="absolute right-0 mt-2 w-40 bg-white rounded-lg shadow-lg border border-gray-200 z-10">
-                      <button
-                        onClick={() => handleEditCookType(cook)}
-                        className="w-full px-4 py-2 text-left text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
-                      >
-                        <Pencil className="w-4 h-4" />
-                        Edit
-                      </button>
-                      <button
-                        onClick={() => handleDeleteCookType(cook.id)}
-                        className="w-full px-4 py-2 text-left text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
-                      >
-                        <Trash2 className="w-4 h-4" />
-                        Delete
-                      </button>
-                    </div>
-                  )}
-                </div>
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="px-6 py-4 bg-gradient-to-r from-red-50 to-rose-50 border-b border-gray-100">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <div className="p-2 bg-red-500 rounded-lg">
+                <ChefHat className="w-5 h-5 text-white" />
+              </div>
+              <div>
+                <h2 className="text-lg font-semibold text-gray-800">Cook Types</h2>
+                <p className="text-xs text-gray-500 mt-0.5">{cookTypes.length} cook types</p>
               </div>
             </div>
-          ))}
+            <button
+              onClick={() => {
+                resetCookTypeModal();
+                setCookTypeModalOpen(true);
+              }}
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl shadow-md shadow-red-500/30 hover:shadow-lg hover:shadow-red-500/40 hover:from-red-600 hover:to-red-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
+            >
+              <Plus className="w-4 h-4" />
+              <span>Add Cook Type</span>
+            </button>
+          </div>
+        </div>
+        <div className="p-6">
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-5 gap-4">
+            {cookTypes.length === 0 ? (
+              <div className="col-span-full text-center py-12">
+                <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+                  <ChefHat className="w-8 h-8 text-gray-400" />
+                </div>
+                <p className="text-gray-500 font-medium">No cook types yet</p>
+                <p className="text-sm text-gray-400 mt-1">Add your first cook type to get started</p>
+              </div>
+            ) : (
+              cookTypes.map((cook) => (
+                <div
+                  key={cook.id}
+                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-white to-gray-50 hover:border-red-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                >
+                  <div className="flex items-center justify-between">
+                    <div className="flex-1 min-w-0">
+                      <h3 className="font-semibold text-gray-800 truncate">{cook.name}</h3>
+                    </div>
+                    <div className="relative ml-2">
+                      <button
+                        onClick={(e) => handleMenuClick('cookType', cook.id, e)}
+                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
+                      >
+                        <MoreVertical className="w-4 h-4" />
+                      </button>
+                      {openMenu?.type === 'cookType' && openMenu?.id === cook.id && (
+                        <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-200 z-20 overflow-hidden">
+                          <button
+                            onClick={() => handleEditCookType(cook)}
+                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                          >
+                            <Pencil className="w-4 h-4" />
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => handleDeleteCookType(cook.id)}
+                            className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
+                          >
+                            <Trash2 className="w-4 h-4" />
+                            Delete
+                          </button>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
         </div>
       </div>
 
@@ -484,52 +619,66 @@ export default function SettingsPage() {
         onClose={resetCategoryModal}
         title={editingCategory ? 'Edit Food Category' : 'Food Category'}
         footer={
-          <Button variant="primary" onClick={handleCreateCategory}>
-            {editingCategory ? 'UPDATE' : 'ADD'}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={resetCategoryModal}
+              className="px-6 py-2.5"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleCreateCategory}
+              className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md shadow-blue-500/30"
+            >
+              {editingCategory ? 'Update' : 'Add Category'}
+            </Button>
+          </div>
         }
       >
-        <div className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); handleCreateCategory(); }} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Category Name</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Category Name <span className="text-red-500">*</span></label>
             <input
               type="text"
+              required
               placeholder="Enter Food Category"
               value={categoryForm.name}
               onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
             />
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Display Order</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Display Order</label>
             <input
               type="number"
               value={categoryForm.display_order}
               onChange={(e) => setCategoryForm({ ...categoryForm, display_order: parseInt(e.target.value) || 0 })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
             />
           </div>
-          <div className="flex items-center gap-4">
-            <label className="flex items-center gap-2">
+          <div className="flex items-center gap-6">
+            <label className="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
                 checked={categoryForm.show_specification}
                 onChange={(e) => setCategoryForm({ ...categoryForm, show_specification: e.target.checked })}
-                className="rounded"
+                className="w-5 h-5 rounded border-2 border-gray-300 text-blue-500 focus:ring-2 focus:ring-blue-500 cursor-pointer"
               />
-              <span className="text-sm text-gray-700">Show Specification</span>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Show Specification</span>
             </label>
-            <label className="flex items-center gap-2">
+            <label className="flex items-center gap-3 cursor-pointer group">
               <input
                 type="checkbox"
                 checked={categoryForm.show_cook_type}
                 onChange={(e) => setCategoryForm({ ...categoryForm, show_cook_type: e.target.checked })}
-                className="rounded"
+                className="w-5 h-5 rounded border-2 border-gray-300 text-blue-500 focus:ring-2 focus:ring-blue-500 cursor-pointer"
               />
-              <span className="text-sm text-gray-700">Show Cook Type</span>
+              <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Show Cook Type</span>
             </label>
           </div>
-        </div>
+        </form>
       </Modal>
 
       {/* Type Modal */}
@@ -538,18 +687,32 @@ export default function SettingsPage() {
         onClose={resetTypeModal}
         title={editingType ? 'Edit Food Type' : 'Food Type'}
         footer={
-          <Button variant="primary" onClick={handleCreateType}>
-            {editingType ? 'UPDATE' : 'ADD'}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={resetTypeModal}
+              className="px-6 py-2.5"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleCreateType}
+              className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-md shadow-green-500/30"
+            >
+              {editingType ? 'Update' : 'Add Type'}
+            </Button>
+          </div>
         }
       >
-        <div className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); handleCreateType(); }} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select food category</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Select Food Category <span className="text-red-500">*</span></label>
             <select
+              required
               value={typeForm.category_id}
               onChange={(e) => setTypeForm({ ...typeForm, category_id: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white cursor-pointer"
             >
               <option value="">Select category</option>
               {categories.map((cat) => (
@@ -560,16 +723,17 @@ export default function SettingsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Enter Food Type</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Enter Food Type <span className="text-red-500">*</span></label>
             <input
               type="text"
+              required
               placeholder="Enter Food Type"
               value={typeForm.name}
               onChange={(e) => setTypeForm({ ...typeForm, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
             />
           </div>
-        </div>
+        </form>
       </Modal>
 
       {/* Specification Modal */}
@@ -578,18 +742,32 @@ export default function SettingsPage() {
         onClose={resetSpecModal}
         title={editingSpec ? 'Edit Specification' : 'Specification'}
         footer={
-          <Button variant="primary" onClick={handleCreateSpec}>
-            {editingSpec ? 'UPDATE' : 'ADD'}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={resetSpecModal}
+              className="px-6 py-2.5"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleCreateSpec}
+              className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-md shadow-orange-500/30"
+            >
+              {editingSpec ? 'Update' : 'Add Specification'}
+            </Button>
+          </div>
         }
       >
-        <div className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); handleCreateSpec(); }} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select food type</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Select Food Type <span className="text-red-500">*</span></label>
             <select
+              required
               value={specForm.food_type_id}
               onChange={(e) => setSpecForm({ ...specForm, food_type_id: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white cursor-pointer"
             >
               <option value="">Select food type</option>
               {types.map((type) => (
@@ -600,16 +778,17 @@ export default function SettingsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Enter Specification</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Enter Specification <span className="text-red-500">*</span></label>
             <input
               type="text"
+              required
               placeholder="Enter Specification"
               value={specForm.name}
               onChange={(e) => setSpecForm({ ...specForm, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
             />
           </div>
-        </div>
+        </form>
       </Modal>
 
       {/* Cook Type Modal */}
@@ -618,18 +797,32 @@ export default function SettingsPage() {
         onClose={resetCookTypeModal}
         title={editingCookType ? 'Edit Cook Type' : 'Cook Type'}
         footer={
-          <Button variant="primary" onClick={handleCreateCookType}>
-            {editingCookType ? 'UPDATE' : 'ADD'}
-          </Button>
+          <div className="flex items-center gap-3">
+            <Button
+              variant="outline"
+              onClick={resetCookTypeModal}
+              className="px-6 py-2.5"
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="primary"
+              onClick={handleCreateCookType}
+              className="px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-md shadow-red-500/30"
+            >
+              {editingCookType ? 'Update' : 'Add Cook Type'}
+            </Button>
+          </div>
         }
       >
-        <div className="space-y-4">
+        <form onSubmit={(e) => { e.preventDefault(); handleCreateCookType(); }} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Select category</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Select Category <span className="text-red-500">*</span></label>
             <select
+              required
               value={cookTypeForm.category_id}
               onChange={(e) => setCookTypeForm({ ...cookTypeForm, category_id: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white cursor-pointer"
             >
               <option value="">Select category</option>
               {categories.map((cat) => (
@@ -640,16 +833,17 @@ export default function SettingsPage() {
             </select>
           </div>
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Enter Cook Type</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Enter Cook Type <span className="text-red-500">*</span></label>
             <input
               type="text"
+              required
               placeholder="Enter Cook Type"
               value={cookTypeForm.name}
               onChange={(e) => setCookTypeForm({ ...cookTypeForm, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
             />
           </div>
-        </div>
+        </form>
       </Modal>
     </div>
   );

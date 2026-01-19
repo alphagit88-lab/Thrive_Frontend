@@ -7,7 +7,7 @@ import DataTable from '@/components/DataTable';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
 import Badge from '@/components/Badge';
-import { Plus, Pencil, Trash2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, MapPin, Building2 } from 'lucide-react';
 
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -121,29 +121,60 @@ export default function LocationsPage() {
   );
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Locations</h1>
-        <p className="text-sm text-gray-500 mt-1">Dashboard &gt; Menu &gt; Locations</p>
+    <div className="space-y-6">
+      {/* Modern Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg shadow-green-500/20">
+            <MapPin className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Locations</h1>
+            <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+              <Building2 className="w-3.5 h-3.5" />
+              Manage your business locations
+            </p>
+            <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+            Dashboard &gt; Locations &gt; List
+          </p>
+          </div>
+        </div>
+        <button
+          onClick={() => setIsModalOpen(true)}
+          className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105 active:scale-100 min-w-[160px] h-[48px]"
+        >
+          <div className="p-1 bg-white/20 rounded-lg">
+            <Plus className="w-4 h-4" />
+          </div>
+          <span>Add Location</span>
+        </button>
       </div>
 
-      {/* Search and Add */}
-      <div className="flex items-center gap-4 mb-6">
+      {/* Modern Search Bar */}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <Search className="h-5 w-5 text-gray-400" />
+        </div>
         <input
           type="text"
-          placeholder="Search for locations"
+          placeholder="Search locations by name..."
           value={search}
           onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md text-gray-700 placeholder-gray-400"
         />
-        <Button onClick={() => setIsModalOpen(true)} variant="primary">
-          <Plus className="w-4 h-4 mr-2 inline" />
-          ADD
-        </Button>
       </div>
 
-      {/* Table */}
-      <div className="bg-white rounded-lg shadow">
+      {/* Modern Table Card */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="px-6 py-4 bg-gradient-to-r from-gray-50 to-white border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Building2 className="w-5 h-5 text-gray-600" />
+            <h2 className="text-lg font-semibold text-gray-800">All Locations</h2>
+            <span className="ml-2 px-2.5 py-0.5 bg-green-100 text-green-700 text-xs font-medium rounded-full">
+              {filteredLocations.length}
+            </span>
+          </div>
+        </div>
         <DataTable
           columns={columns}
           data={filteredLocations}
@@ -153,15 +184,17 @@ export default function LocationsPage() {
             <div className="flex items-center gap-2">
               <button
                 onClick={() => handleEdit(row)}
-                className="p-1 text-gray-600 hover:text-blue-600"
+                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 group"
+                title="Edit location"
               >
-                <Pencil className="w-4 h-4" />
+                <Pencil className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </button>
               <button
                 onClick={() => handleDelete(row.id)}
-                className="p-1 text-gray-600 hover:text-red-600"
+                className="p-2 text-gray-600 hover:text-red-600 hover:bg-red-50 rounded-lg transition-all duration-200 group"
+                title="Delete location"
               >
-                <Trash2 className="w-4 h-4" />
+                <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </button>
             </div>
           )}
@@ -195,73 +228,79 @@ export default function LocationsPage() {
           </>
         }
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Location Name *
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Location Name <span className="text-red-500">*</span>
             </label>
             <input
               type="text"
               required
               value={formData.name}
               onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
+              placeholder="Enter location name"
             />
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Currency</label>
-            <select
-              value={formData.currency}
-              onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="LKR">LKR</option>
-              <option value="USD">USD</option>
-              <option value="EUR">EUR</option>
-            </select>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Currency</label>
+              <select
+                value={formData.currency}
+                onChange={(e) => setFormData({ ...formData, currency: e.target.value })}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white cursor-pointer"
+              >
+                <option value="LKR">LKR - Sri Lankan Rupee</option>
+                <option value="USD">USD - US Dollar</option>
+                <option value="EUR">EUR - Euro</option>
+              </select>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">Status</label>
+              <select
+                value={formData.status}
+                onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white cursor-pointer"
+              >
+                <option value="active">Active</option>
+                <option value="inactive">Inactive</option>
+              </select>
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Location Type</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Location Type</label>
             <input
               type="text"
               value={formData.location_type}
               onChange={(e) => setFormData({ ...formData, location_type: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
+              placeholder="e.g., Restaurant, Cafe, Branch"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Address</label>
             <textarea
               value={formData.address}
               onChange={(e) => setFormData({ ...formData, address: e.target.value })}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white resize-none"
+              placeholder="Enter full address"
             />
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Phone</label>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Phone</label>
             <input
               type="text"
               value={formData.phone}
               onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
+              placeholder="Enter phone number"
             />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">Status</label>
-            <select
-              value={formData.status}
-              onChange={(e) => setFormData({ ...formData, status: e.target.value as 'active' | 'inactive' })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="active">Active</option>
-              <option value="inactive">Inactive</option>
-            </select>
           </div>
         </form>
       </Modal>
