@@ -6,6 +6,7 @@ import DataTable from '@/components/DataTable';
 import { ordersService } from '@/services/orders.service';
 import { Order, OrderStats } from '@/types';
 import Badge from '@/components/Badge';
+import { BarChart3, TrendingUp, Package, DollarSign, Clock } from 'lucide-react';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<OrderStats | null>(null);
@@ -69,22 +70,37 @@ export default function DashboardPage() {
   if (!locationId) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Please select a location from the header to view dashboard data.</p>
+        <div className="text-center">
+          <div className="p-4 bg-gray-100 rounded-full w-16 h-16 flex items-center justify-center mx-auto mb-4">
+            <BarChart3 className="w-8 h-8 text-gray-400" />
+          </div>
+          <p className="text-gray-500 font-medium">Please select a location from the header to view dashboard data.</p>
+        </div>
       </div>
     );
   }
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-          <p className="text-sm text-gray-500 mt-1">Dashboard &gt; Analytics</p>
+      {/* Page Header */}
+      <div className="mb-8">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-linear-to-br from-black to-black rounded-xl shadow-lg shadow-black/10">
+            <BarChart3 className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Dashboard</h1>
+            <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+              <span>Dashboard</span>
+              <span>&gt;</span>
+              <span className="text-black font-medium">Analytics</span>
+            </p>
+          </div>
         </div>
       </div>
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <KPICard
           title="Preps Received"
           value={stats?.preps_received || 0}
@@ -92,6 +108,8 @@ export default function DashboardPage() {
           timeframe="Last 30 days"
           chart="line"
           chartData={[10, 15, 12, 18, 21, 20, 22]}
+          icon={Package}
+          gradient="from-blue-500 to-blue-600"
         />
         <KPICard
           title="Preps Delivered"
@@ -100,6 +118,8 @@ export default function DashboardPage() {
           timeframe="Last 30 days"
           chart="line"
           chartData={[5, 8, 7, 10, 9, 11, 10]}
+          icon={TrendingUp}
+          gradient="from-green-500 to-green-600"
         />
         <KPICard
           title="Total Earnings"
@@ -108,13 +128,20 @@ export default function DashboardPage() {
           timeframe="Last 30 days"
           chart="bar"
           chartData={[1200, 1500, 1800, 2000, 2200, 2500, 2800]}
+          icon={DollarSign}
+          gradient="from-black to-black"
         />
       </div>
 
       {/* Recent Preps Table */}
-      <div className="bg-white rounded-lg shadow">
-        <div className="p-6 border-b">
-          <h2 className="text-lg font-semibold">Recent Preps</h2>
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="px-6 py-5 border-b border-gray-100 bg-linear-to-r from-gray-50 to-white">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-blue-50 rounded-lg">
+              <Clock className="w-5 h-5 text-blue-600" />
+            </div>
+            <h2 className="text-xl font-bold text-gray-900">Recent Preps</h2>
+          </div>
         </div>
         <div className="p-6">
           <DataTable

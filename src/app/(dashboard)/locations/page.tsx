@@ -125,7 +125,7 @@ export default function LocationsPage() {
       {/* Modern Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-3">
-          <div className="p-3 bg-linear-to-br from-green-500 to-green-600 rounded-xl shadow-lg shadow-green-500/20">
+          <div className="p-3 bg-linear-to-br from-black to-black rounded-xl shadow-lg shadow-green-500/20">
             <MapPin className="w-6 h-6 text-white" />
           </div>
           <div>
@@ -137,7 +137,7 @@ export default function LocationsPage() {
         </div>
         <button
           onClick={() => setIsModalOpen(true)}
-          className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-linear-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-lg shadow-green-500/30 hover:shadow-xl hover:shadow-green-500/40 hover:from-green-600 hover:to-green-700 transition-all duration-300 transform hover:scale-105 active:scale-100 min-w-[160px] h-[48px]"
+          className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-linear-to-r from-black to-black text-white font-semibold rounded-xl shadow-lg hover:shadow-xl shadow-black/10 hover:from-black hover:to-black transition-all duration-300 transform hover:scale-105 active:scale-100 min-w-[160px] h-[48px]"
         >
           <div className="p-1 bg-white/20 rounded-lg">
             <Plus className="w-4 h-4" />

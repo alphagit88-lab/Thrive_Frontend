@@ -5,8 +5,7 @@ import { ingredientsService } from '@/services/ingredients.service';
 import { settingsService } from '@/services/settings.service';
 import { Ingredient, IngredientForm, FoodCategory, FoodType, Specification, CookType } from '@/types';
 import Tabs from '@/components/Tabs';
-import Button from '@/components/Button';
-import { Plus, MoreVertical, Pencil, Trash2, Save } from 'lucide-react';
+import { Plus, MoreVertical, Pencil, Trash2, Save, Apple, Package } from 'lucide-react';
 
 export default function IngredientsPage() {
   const [categories, setCategories] = useState<FoodCategory[]>([]);
@@ -262,15 +261,38 @@ export default function IngredientsPage() {
 
   return (
     <div>
-      <div className="mb-6 flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Ingredients</h1>
-          <p className="text-sm text-gray-500 mt-1">Dashboard &gt; Ingredients &gt; List &gt; {currentCategory?.name || ''}</p>
+      {/* Page Header */}
+      <div className="mb-8 flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-linear-to-br from-black to-black rounded-xl shadow-lg shadow-black/10">
+            <Apple className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Ingredients</h1>
+            <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+              <span>Dashboard</span>
+              <span>&gt;</span>
+              <span>Ingredients</span>
+              <span>&gt;</span>
+              <span>List</span>
+              {currentCategory?.name && (
+                <>
+                  <span>&gt;</span>
+                  <span className="text-black font-medium">{currentCategory.name}</span>
+                </>
+              )}
+            </p>
+          </div>
         </div>
-        <Button onClick={handleAddNew} variant="primary">
-          <Plus className="w-4 h-4 mr-2 inline" />
-          ADD
-        </Button>
+        <button
+          onClick={handleAddNew}
+            className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-linear-to-r from-black to-black text-white font-semibold rounded-xl shadow-lg shadow-black/10 hover:shadow-xl hover:shadow-black/10 hover:from-black hover:to-black transition-all duration-300 transform hover:scale-105 active:scale-100 min-w-[140px] h-[48px]"
+        >
+          <div className="p-1 bg-white/20 rounded-lg">
+            <Plus className="w-4 h-4" />
+          </div>
+          <span>Add Ingredient</span>
+        </button>
       </div>
 
       {/* Category Tabs - Dynamic from API */}
@@ -285,39 +307,40 @@ export default function IngredientsPage() {
       )}
 
       {/* Ingredients Form Card */}
-      <div className="mt-6 bg-white rounded-lg shadow p-6 relative">
+      <div className="mt-6 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative hover:shadow-xl transition-all duration-300">
         {/* 3-dots Menu */}
         {editingIngredient && (
           <div className="absolute top-6 right-6">
             <button
               onClick={(e) => handleMenuClick(editingIngredient.id, e)}
-              className="text-gray-400 hover:text-gray-600 relative z-10"
+              className="text-gray-400 hover:text-gray-600 relative z-10 p-2 hover:bg-gray-100 rounded-lg transition-colors"
             >
               <MoreVertical className="w-5 h-5" />
             </button>
             {openMenu === editingIngredient.id && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border border-gray-200">
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl z-20 border border-gray-200 overflow-hidden">
                 <button
                   onClick={() => handleEdit(editingIngredient)}
-                  className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                  className="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                 >
-                  <Pencil className="w-4 h-4 mr-2" /> Edit
+                  <Pencil className="w-4 h-4 mr-3 text-gray-500" /> Edit
                 </button>
+                <div className="border-t border-gray-100"></div>
                 <button
                   onClick={() => handleDelete(editingIngredient.id)}
-                  className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                  className="flex items-center w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
                 >
-                  <Trash2 className="w-4 h-4 mr-2" /> Delete
+                  <Trash2 className="w-4 h-4 mr-3" /> Delete
                 </button>
               </div>
             )}
           </div>
         )}
 
-        <div className="space-y-4">
+        <div className="space-y-5">
           {/* Category Type Dropdown */}
           <div>
-            <label className="text-xs text-gray-500 block mb-1">
+            <label className="text-xs font-semibold text-gray-700 block mb-2">
               {currentCategory?.name} Type
             </label>
             <select
@@ -325,7 +348,7 @@ export default function IngredientsPage() {
               onChange={(e) => {
                 setFormData({ ...formData, food_type_id: e.target.value, specification_id: '' });
               }}
-              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
             >
               <option value="">Select</option>
               {foodTypes.map((type) => (
@@ -338,47 +361,45 @@ export default function IngredientsPage() {
 
           {/* Quantity and Price Section */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="text-xs text-gray-500">Qty</label>
-              <div className="flex items-center gap-2">
-                <span className="text-xs text-gray-500">Price</span>
-                <button
-                  onClick={() => {
-                    setFormData({
-                      ...formData,
-                      quantities: [
-                        ...formData.quantities,
-                        { quantity_value: '', quantity_grams: 0, price: 0, is_available: true },
-                      ],
-                    });
-                  }}
-                  className="text-gray-400 hover:text-gray-600"
-                >
-                  <Plus className="w-4 h-4" />
-                </button>
-              </div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-xs font-semibold text-gray-700">Quantity & Price</label>
+              <button
+                onClick={() => {
+                  setFormData({
+                    ...formData,
+                    quantities: [
+                      ...formData.quantities,
+                      { quantity_value: '', quantity_grams: 0, price: 0, is_available: true },
+                    ],
+                  });
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-black hover:text-black hover:bg-black rounded-lg transition-colors"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Quantity</span>
+              </button>
             </div>
-            <div className="space-y-2">
+            <div className="space-y-3">
               {formData.quantities.map((qty, index) => (
-                <div key={`qty-${index}-${qty.quantity_value || 'empty'}`} className="flex items-center gap-2">
+                <div key={`qty-${index}-${qty.quantity_value || 'empty'}`} className="flex items-center gap-3 p-3 bg-gray-50 rounded-xl border-2 border-gray-200 hover:border-purple-300 transition-colors">
                   <input
                     type="checkbox"
                     checked={qty.is_available}
                     onChange={(e) => handleQuantityChange(index, 'is_available', e.target.checked)}
-                    className="w-4 h-4 text-green-600 border-gray-300 rounded"
+                    className="w-5 h-5 text-black border-gray-300 rounded focus:ring-black cursor-pointer"
                   />
                   <input
                     type="text"
                     value={qty.quantity_value}
                     onChange={(e) => handleQuantityChange(index, 'quantity_value', e.target.value)}
-                    className="flex-1 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                    className="flex-1 px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 bg-white text-sm"
                     placeholder="100g"
                   />
                   <input
                     type="number"
                     value={qty.price || ''}
                     onChange={(e) => handleQuantityChange(index, 'price', parseFloat(e.target.value) || 0)}
-                    className="w-24 px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                    className="w-28 px-4 py-2 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 bg-white text-sm"
                     placeholder="0.00"
                   />
                 </div>
@@ -389,11 +410,11 @@ export default function IngredientsPage() {
           {/* Specification */}
           {currentCategory?.show_specification && (
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Specification</label>
+              <label className="text-xs font-semibold text-gray-700 block mb-2">Specification</label>
               <select
                 value={formData.specification_id}
                 onChange={(e) => setFormData({ ...formData, specification_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                 disabled={!formData.food_type_id}
               >
                 <option value="">Select</option>
@@ -409,11 +430,11 @@ export default function IngredientsPage() {
           {/* Type of cook */}
           {currentCategory?.show_cook_type && (
             <div>
-              <label className="text-xs text-gray-500 block mb-1">Type of cook</label>
+              <label className="text-xs font-semibold text-gray-700 block mb-2">Type of cook</label>
               <select
                 value={formData.cook_type_id}
                 onChange={(e) => setFormData({ ...formData, cook_type_id: e.target.value })}
-                className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
               >
                 <option value="">Select</option>
                 {cookTypes.map((cook) => (
@@ -427,65 +448,91 @@ export default function IngredientsPage() {
         </div>
 
         {/* SAVE Button */}
-        <div className="flex justify-end mt-6">
-          <Button variant="primary" onClick={handleSubmit}>
-            <Save className="w-4 h-4 mr-2 inline" />
-            SAVE
-          </Button>
+        <div className="flex justify-end mt-6 pt-6 border-t border-gray-100">
+          <button
+            onClick={handleSubmit}
+            className="flex items-center justify-center gap-2.5 px-8 py-3.5 bg-linear-to-r from-black to-black text-white font-semibold rounded-xl shadow-lg  hover:shadow-xl hover:shadow-black hover:from-black hover:to-black transition-all duration-300 transform hover:scale-105 active:scale-100"
+          >
+            <Save className="w-5 h-5" />
+            <span>Save Ingredient</span>
+          </button>
         </div>
       </div>
 
       {/* Existing Ingredients List */}
       {categoryIngredients.length > 0 && (
-        <div className="mt-6">
-          <h2 className="text-lg font-semibold mb-4">Existing Ingredients</h2>
+        <div className="mt-8">
+          <div className="flex items-center gap-2 mb-6">
+            <Package className="w-5 h-5 text-black" />
+            <h2 className="text-xl font-bold text-gray-900">Existing Ingredients</h2>
+            <span className="px-3 py-1 bg-purple-50 text-purple-600 rounded-full text-xs font-semibold">
+              {categoryIngredients.length}
+            </span>
+          </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {categoryIngredients.map((ing) => (
-              <div key={ing.id} className="bg-white rounded-lg shadow p-4 relative">
+              <div key={ing.id} className="bg-white rounded-xl shadow-lg border border-gray-100 p-5 relative hover:shadow-xl transition-all duration-300">
                 {/* 3-dots Menu */}
                 <div className="absolute top-4 right-4">
                   <button
                     onClick={(e) => handleMenuClick(ing.id, e)}
-                    className="text-gray-400 hover:text-gray-600 relative z-10"
+                    className="text-gray-400 hover:text-gray-600 relative z-10 p-2 hover:bg-gray-100 rounded-lg transition-colors"
                   >
                     <MoreVertical className="w-5 h-5" />
                   </button>
                   {openMenu === ing.id && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-md shadow-lg z-20 border border-gray-200">
+                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl z-20 border border-gray-200 overflow-hidden">
                       <button
                         onClick={() => handleEdit(ing)}
-                        className="flex items-center w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100"
+                        className="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
                       >
-                        <Pencil className="w-4 h-4 mr-2" /> Edit
+                        <Pencil className="w-4 h-4 mr-3 text-gray-500" /> Edit
                       </button>
+                      <div className="border-t border-gray-100"></div>
                       <button
                         onClick={() => handleDelete(ing.id)}
-                        className="flex items-center w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
+                        className="flex items-center w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
                       >
-                        <Trash2 className="w-4 h-4 mr-2" /> Delete
+                        <Trash2 className="w-4 h-4 mr-3" /> Delete
                       </button>
                     </div>
                   )}
                 </div>
-                <h3 className="font-semibold text-sm mb-1">{ing.name || ing.food_type_name}</h3>
-                {ing.specification_name && (
-                  <p className="text-xs text-gray-500 mb-1">Spec: {ing.specification_name}</p>
-                )}
-                {ing.cook_type_name && (
-                  <p className="text-xs text-gray-500 mb-1">Cook: {ing.cook_type_name}</p>
-                )}
-                {ing.quantities && ing.quantities.length > 0 && (
-                  <div className="mt-2">
-                    <p className="text-xs font-medium text-gray-700 mb-1">Quantities:</p>
-                    <div className="space-y-1">
-                      {ing.quantities.filter(q => q.is_available).map((qty, idx) => (
-                        <div key={`${ing.id}-qty-${idx}-${qty.id || qty.quantity_value}`} className="text-xs text-gray-600">
-                          {qty.quantity_value}: LKR {qty.price.toLocaleString()}
-                        </div>
-                      ))}
+                <div className="pr-8">
+                  <div className="flex items-center gap-2 mb-3">
+                    <div className="p-2 bg-purple-50 rounded-lg">
+                      <Package className="w-4 h-4 text-purple-600" />
                     </div>
+                    <h3 className="font-bold text-base text-gray-900">{ing.name || ing.food_type_name}</h3>
                   </div>
-                )}
+                  {ing.specification_name && (
+                    <div className="mb-2">
+                      <span className="inline-flex items-center px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium">
+                        Spec: {ing.specification_name}
+                      </span>
+                    </div>
+                  )}
+                  {ing.cook_type_name && (
+                    <div className="mb-3">
+                      <span className="inline-flex items-center px-2.5 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-medium">
+                        Cook: {ing.cook_type_name}
+                      </span>
+                    </div>
+                  )}
+                  {ing.quantities && ing.quantities.length > 0 && (
+                    <div className="mt-4 pt-4 border-t border-gray-100">
+                      <p className="text-xs font-semibold text-gray-700 mb-2">Quantities & Prices:</p>
+                      <div className="space-y-2">
+                        {ing.quantities.filter(q => q.is_available).map((qty, idx) => (
+                          <div key={`${ing.id}-qty-${idx}-${qty.id || qty.quantity_value}`} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">
+                            <span className="text-sm font-medium text-gray-700">{qty.quantity_value}</span>
+                            <span className="text-sm font-semibold text-purple-600">LKR {qty.price.toLocaleString()}</span>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>

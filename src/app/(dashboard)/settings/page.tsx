@@ -282,7 +282,7 @@ export default function SettingsPage() {
     <div className="space-y-6">
       {/* Modern Header */}
       <div className="flex items-center gap-3">
-        <div className="p-3 bg-gradient-to-br from-green-500 to-green-600 rounded-xl shadow-lg shadow-green-500/20">
+        <div className="p-3 bg-linear-to-br from-black to-black rounded-xl shadow-lg shadow-black/10">
           <Settings className="w-6 h-6 text-white" />
         </div>
         <div>
@@ -296,7 +296,7 @@ export default function SettingsPage() {
 
       {/* Food Categories */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 bg-gradient-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+        <div className="px-6 py-4 bg-linear-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500 rounded-lg">
@@ -312,7 +312,7 @@ export default function SettingsPage() {
                 resetCategoryModal();
                 setCategoryModalOpen(true);
               }}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-linear-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
             >
               <Plus className="w-4 h-4" />
               <span>Add Category</span>
@@ -333,7 +333,7 @@ export default function SettingsPage() {
               categories.map((cat) => (
                 <div
                   key={cat.id}
-                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-white to-gray-50 hover:border-blue-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-blue-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -378,7 +378,7 @@ export default function SettingsPage() {
 
       {/* Food Types */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 bg-gradient-to-r from-green-50 to-emerald-50 border-b border-gray-100">
+        <div className="px-6 py-4 bg-linear-to-r from-green-50 to-emerald-50 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500 rounded-lg">
@@ -394,7 +394,7 @@ export default function SettingsPage() {
                 resetTypeModal();
                 setTypeModalOpen(true);
               }}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-md shadow-green-500/30 hover:shadow-lg hover:shadow-green-500/40 hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-linear-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-md shadow-green-500/30 hover:shadow-lg hover:shadow-green-500/40 hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
             >
               <Plus className="w-4 h-4" />
               <span>Add Type</span>
@@ -415,7 +415,7 @@ export default function SettingsPage() {
               types.map((type) => (
                 <div
                   key={type.id}
-                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-white to-gray-50 hover:border-green-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-green-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -457,7 +457,7 @@ export default function SettingsPage() {
 
       {/* Specifications */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 bg-gradient-to-r from-orange-50 to-amber-50 border-b border-gray-100">
+        <div className="px-6 py-4 bg-linear-to-r from-orange-50 to-amber-50 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-500 rounded-lg">
@@ -473,7 +473,7 @@ export default function SettingsPage() {
                 resetSpecModal();
                 setSpecModalOpen(true);
               }}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-md shadow-orange-500/30 hover:shadow-lg hover:shadow-orange-500/40 hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-linear-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-md shadow-orange-500/30 hover:shadow-lg hover:shadow-orange-500/40 hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
             >
               <Plus className="w-4 h-4" />
               <span>Add Specification</span>
@@ -494,7 +494,7 @@ export default function SettingsPage() {
               specifications.map((spec) => (
                 <div
                   key={spec.id}
-                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-white to-gray-50 hover:border-orange-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-orange-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -536,7 +536,7 @@ export default function SettingsPage() {
 
       {/* Cook Types */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
-        <div className="px-6 py-4 bg-gradient-to-r from-red-50 to-rose-50 border-b border-gray-100">
+        <div className="px-6 py-4 bg-linear-to-r from-red-50 to-rose-50 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-500 rounded-lg">
@@ -552,7 +552,7 @@ export default function SettingsPage() {
                 resetCookTypeModal();
                 setCookTypeModalOpen(true);
               }}
-              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-gradient-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl shadow-md shadow-red-500/30 hover:shadow-lg hover:shadow-red-500/40 hover:from-red-600 hover:to-red-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
+              className="flex items-center justify-center gap-2 px-4 py-2.5 bg-linear-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl shadow-md shadow-red-500/30 hover:shadow-lg hover:shadow-red-500/40 hover:from-red-600 hover:to-red-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
             >
               <Plus className="w-4 h-4" />
               <span>Add Cook Type</span>
@@ -573,7 +573,7 @@ export default function SettingsPage() {
               cookTypes.map((cook) => (
                 <div
                   key={cook.id}
-                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-gradient-to-br from-white to-gray-50 hover:border-red-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-red-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -630,7 +630,7 @@ export default function SettingsPage() {
             <Button
               variant="primary"
               onClick={handleCreateCategory}
-              className="px-6 py-2.5 bg-gradient-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md shadow-blue-500/30"
+              className="px-6 py-2.5 bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md shadow-blue-500/30"
             >
               {editingCategory ? 'Update' : 'Add Category'}
             </Button>
@@ -698,7 +698,7 @@ export default function SettingsPage() {
             <Button
               variant="primary"
               onClick={handleCreateType}
-              className="px-6 py-2.5 bg-gradient-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-md shadow-green-500/30"
+                className="px-6 py-2.5 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-md shadow-green-500/30"
             >
               {editingType ? 'Update' : 'Add Type'}
             </Button>
@@ -753,7 +753,7 @@ export default function SettingsPage() {
             <Button
               variant="primary"
               onClick={handleCreateSpec}
-              className="px-6 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-md shadow-orange-500/30"
+              className="px-6 py-2.5 bg-linear-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-md shadow-orange-500/30"
             >
               {editingSpec ? 'Update' : 'Add Specification'}
             </Button>
@@ -808,7 +808,7 @@ export default function SettingsPage() {
             <Button
               variant="primary"
               onClick={handleCreateCookType}
-              className="px-6 py-2.5 bg-gradient-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-md shadow-red-500/30"
+              className="px-6 py-2.5 bg-linear-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-md shadow-red-500/30"
             >
               {editingCookType ? 'Update' : 'Add Cook Type'}
             </Button>

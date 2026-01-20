@@ -8,7 +8,7 @@ import Button from '@/components/Button';
 import Badge from '@/components/Badge';
 import Modal from '@/components/Modal';
 import Tabs from '@/components/Tabs';
-import { Plus, Pencil, Trash2, MoreVertical } from 'lucide-react';
+import { Plus, Pencil, Trash2, MoreVertical, Users, Search, UserPlus } from 'lucide-react';
 
 export default function UsersPage() {
   const [users, setUsers] = useState<User[]>([]);
@@ -209,28 +209,58 @@ export default function UsersPage() {
   if (!locationId) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Please select a location first</p>
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+            <Users className="w-8 h-8 text-gray-400" />
+          </div>
+          <p className="text-gray-500 font-medium">Please select a location first</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      {/* Page Title */}
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Users</h1>
+    <div className="space-y-6">
+      {/* Modern Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-linear-to-br from-black to-black rounded-xl shadow-lg">
+            <Users className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Users</h1>
+            <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+            Dashboard &gt; Users &gt; List
+            </p>
+          </div>
+        </div>
+        <button
+          onClick={() => {
+            resetForm();
+            setIsModalOpen(true);
+          }}
+          className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-linear-to-r from-black to-black text-white font-semibold rounded-xl shadow-lg hover:shadow-xl hover:shadow-black/10 hover:from-black hover:to-black transition-all duration-300 transform hover:scale-105 active:scale-100 min-w-[160px] h-[48px]"
+        >
+          <div className="p-1 bg-white/20 rounded-lg">
+            <Plus className="w-4 h-4" />
+          </div>
+          <span>Add User</span>
+        </button>
       </div>
 
       {/* Sub-navigation Tabs */}
-      <div className="mb-6">
+      <div>
         <Tabs tabs={subTabs} activeTab={activeTab} onChange={setActiveTab} />
       </div>
 
-      {/* Search and Add */}
-      <div className="flex items-center gap-4 mb-6">
+      {/* Modern Search Bar */}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <Search className="h-5 w-5 text-gray-400" />
+        </div>
         <input
           type="text"
-          placeholder="Search users..."
+          placeholder="Search users by name, email, or role..."
           value={search}
           onChange={(e) => {
             setSearch(e.target.value);
@@ -243,22 +273,21 @@ export default function UsersPage() {
               loadUsers(locationId);
             }
           }}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+          className="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md text-gray-700 placeholder-gray-400"
         />
-        <Button
-          variant="primary"
-          onClick={() => {
-            resetForm();
-            setIsModalOpen(true);
-          }}
-        >
-          <Plus className="w-4 h-4 mr-2 inline" />
-          ADD
-        </Button>
       </div>
 
-      {/* Users Table */}
-      <div className="bg-white rounded-lg shadow">
+      {/* Modern Table Card */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="px-6 py-4 bg-linear-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Users className="w-5 h-5 text-blue-600" />
+            <h2 className="text-lg font-semibold text-gray-800">All Users</h2>
+            <span className="ml-2 px-2.5 py-0.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-full">
+              {users.length}
+            </span>
+          </div>
+        </div>
         <DataTable
           columns={columns}
           data={users}
@@ -271,13 +300,14 @@ export default function UsersPage() {
                   e.stopPropagation();
                   setShowActionsMenu(showActionsMenu === row.id ? null : row.id);
                 }}
-                className="p-1 text-gray-600 hover:text-gray-900"
+                className="p-2 text-gray-600 hover:text-blue-600 hover:bg-blue-50 rounded-lg transition-all duration-200 group"
+                title="Actions"
               >
-                <MoreVertical className="w-4 h-4" />
+                <MoreVertical className="w-4 h-4 group-hover:scale-110 transition-transform" />
               </button>
               {showActionsMenu === row.id && (
                 <div
-                  className="absolute right-0 mt-1 w-48 bg-white rounded-md shadow-lg z-10 border border-gray-200"
+                  className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl border border-gray-200 z-20 overflow-hidden"
                   onClick={(e) => e.stopPropagation()}
                 >
                   <div className="py-1">
@@ -286,9 +316,9 @@ export default function UsersPage() {
                         e.stopPropagation();
                         handleEdit(row);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2.5 text-sm text-gray-700 hover:bg-blue-50 flex items-center gap-2 transition-colors group"
                     >
-                      <Pencil className="w-4 h-4" />
+                      <Pencil className="w-4 h-4 group-hover:scale-110 transition-transform" />
                       Edit / Update
                     </button>
                     <button
@@ -296,9 +326,9 @@ export default function UsersPage() {
                         e.stopPropagation();
                         handleDelete(row.id);
                       }}
-                      className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-gray-100 flex items-center gap-2"
+                      className="w-full text-left px-4 py-2.5 text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors group"
                     >
-                      <Trash2 className="w-4 h-4" />
+                      <Trash2 className="w-4 h-4 group-hover:scale-110 transition-transform" />
                       Delete
                     </button>
                   </div>
@@ -318,106 +348,118 @@ export default function UsersPage() {
         }}
         title={editingUser ? 'Edit User' : 'Add User'}
         footer={
-          <>
+          <div className="flex items-center gap-3">
             <Button
               variant="outline"
               onClick={() => {
                 setIsModalOpen(false);
                 resetForm();
               }}
+              className="px-6 py-2.5"
             >
               Cancel
             </Button>
-            <Button variant="primary" onClick={handleSubmit}>
-              {editingUser ? 'Update' : 'Add'}
+            <Button
+              variant="primary"
+              onClick={handleSubmit}
+              className="px-6 py-2.5 bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md shadow-blue-500/30"
+            >
+              {editingUser ? 'Update User' : 'Add User'}
             </Button>
-          </>
+          </div>
         }
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Email *
-            </label>
-            <input
-              type="email"
-              required
-              value={formData.email}
-              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="user@example.com"
-            />
+        <form onSubmit={handleSubmit} className="space-y-5">
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Email <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="email"
+                required
+                value={formData.email}
+                onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
+                placeholder="user@example.com"
+              />
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Name <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="text"
+                required
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
+                placeholder="User Name"
+              />
+            </div>
           </div>
 
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Name *
-            </label>
-            <input
-              type="text"
-              required
-              value={formData.name}
-              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="User Name"
-            />
-          </div>
-
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Password {!editingUser && '*'}
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Password {!editingUser && <span className="text-red-500">*</span>}
             </label>
             <input
               type="password"
               required={!editingUser}
               value={formData.password}
               onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
               placeholder={editingUser ? 'Leave blank to keep current password' : 'Enter password'}
             />
             {editingUser && (
-              <p className="text-xs text-gray-500 mt-1">Leave blank to keep current password</p>
+              <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
+                <span className="w-1 h-1 rounded-full bg-gray-400"></span>
+                Leave blank to keep current password
+              </p>
             )}
           </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Contact Number
-            </label>
-            <input
-              type="tel"
-              value={formData.contact_number}
-              onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-              placeholder="+1234567890"
-            />
-          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Contact Number
+              </label>
+              <input
+                type="tel"
+                value={formData.contact_number}
+                onChange={(e) => setFormData({ ...formData, contact_number: e.target.value })}
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
+                placeholder="+1234567890"
+              />
+            </div>
 
-          <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Role *
-            </label>
-            <select
-              required
-              value={formData.role}
-              onChange={(e) =>
-                setFormData({
-                  ...formData,
-                  role: e.target.value as 'admin' | 'manager' | 'staff' | 'kitchen_staff',
-                })
-              }
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-            >
-              <option value="staff">Staff</option>
-              <option value="admin">Admin</option>
-              <option value="manager">Manager</option>
-              <option value="kitchen_staff">Kitchen Staff</option>
-            </select>
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Role <span className="text-red-500">*</span>
+              </label>
+              <select
+                required
+                value={formData.role}
+                onChange={(e) =>
+                  setFormData({
+                    ...formData,
+                    role: e.target.value as 'admin' | 'manager' | 'staff' | 'kitchen_staff',
+                  })
+                }
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white cursor-pointer"
+              >
+                <option value="staff">Staff</option>
+                <option value="admin">Admin</option>
+                <option value="manager">Manager</option>
+                <option value="kitchen_staff">Kitchen Staff</option>
+              </select>
+            </div>
           </div>
 
           {editingUser && (
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
                 Account Status
               </label>
               <select
@@ -428,7 +470,7 @@ export default function UsersPage() {
                     account_status: e.target.value as 'active' | 'inactive' | 'suspended',
                   })
                 }
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+                className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white cursor-pointer"
               >
                 <option value="active">Active</option>
                 <option value="inactive">Inactive</option>

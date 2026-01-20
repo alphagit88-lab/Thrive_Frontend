@@ -11,7 +11,7 @@ import {
   User, 
   Settings, 
   MapPin,
-  Sparkles
+  
 } from 'lucide-react';
 
 interface NavItem {
@@ -47,15 +47,12 @@ export default function Sidebar({ user }: SidebarProps) {
     <div className="w-64 bg-linear-to-b from-white to-gray-50 min-h-screen flex flex-col border-r border-gray-200 shadow-lg">
       {/* Logo Section */}
       <div className="p-6 border-b border-gray-200 bg-white">
-        <div className="flex items-center gap-3">
-          <div className="p-2 bg-linear-to-br from-green-500 to-green-600 rounded-xl shadow-lg shadow-green-500/30">
-            <Sparkles className="w-6 h-6 text-white" />
-          </div>
-          <h1 className="text-2xl font-bold bg-linear-to-r from-green-600 to-green-700 bg-clip-text text-transparent">
+        <div className="mb-3">
+          <h1 className="text-4xl font-black tracking-tighter bg-linear-to-r from-green-600 via-emerald-600 to-green-700 bg-clip-text text-transparent leading-none">
             Thrive
           </h1>
         </div>
-        <p className="text-xs text-gray-500 mt-2 ml-1">Admin Dashboard</p>
+        <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Admin Dashboard</p>
       </div>
 
       {/* User Profile Card */}

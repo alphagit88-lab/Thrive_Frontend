@@ -10,7 +10,7 @@ import Button from '@/components/Button';
 import Badge from '@/components/Badge';
 import Modal from '@/components/Modal';
 import Tabs from '@/components/Tabs';
-import { Plus, X } from 'lucide-react';
+import { Plus, X, ShoppingCart, Search, Receipt } from 'lucide-react';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
@@ -270,44 +270,75 @@ export default function OrdersPage() {
   if (!locationId) {
     return (
       <div className="flex items-center justify-center h-64">
-        <p className="text-gray-500">Please select a location first</p>
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-full bg-gray-100 flex items-center justify-center mx-auto mb-3">
+            <ShoppingCart className="w-8 h-8 text-gray-400" />
+          </div>
+          <p className="text-gray-500 font-medium">Please select a location first</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div>
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900">Orders</h1>
-        <p className="text-sm text-gray-500 mt-1">Dashboard &gt; Orders</p>
-      </div>
-
-      {/* Sub-navigation Tabs */}
-      <Tabs tabs={subTabs} activeTab={activeTab} onChange={setActiveTab} />
-
-      {/* Search and Add */}
-      <div className="flex items-center gap-4 my-6">
-        <input
-          type="text"
-          placeholder="Search orders..."
-          value={search}
-          onChange={(e) => setSearch(e.target.value)}
-          className="flex-1 px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
-        />
-        <Button
-          variant="primary"
+    <div className="space-y-6">
+      {/* Modern Header */}
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-linear-to-br from-black to-black rounded-xl shadow-lg">
+            <Receipt className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Orders</h1>
+            <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+              Dashboard &gt; Orders &gt; List
+            </p>
+          </div>
+        </div>
+        <button
           onClick={() => {
             resetForm();
             setIsModalOpen(true);
           }}
+          className="flex items-center justify-center gap-2.5 px-6 py-3.5 bg-linear-to-r from-black to-black text-white font-semibold rounded-xl shadow-lg  hover:shadow-xl hover:shadow-black/10 hover:from-black hover:to-black transition-all duration-300 transform hover:scale-105 active:scale-100 min-w-[160px] h-[48px]"
         >
-          <Plus className="w-4 h-4 mr-2 inline" />
-          ADD
-        </Button>
+          <div className="p-1 bg-white/20 rounded-lg">
+            <Plus className="w-4 h-4" />
+          </div>
+          <span>Add Order</span>
+        </button>
       </div>
 
-      {/* Orders Table */}
-      <div className="bg-white rounded-lg shadow">
+      {/* Sub-navigation Tabs */}
+      <div>
+        <Tabs tabs={subTabs} activeTab={activeTab} onChange={setActiveTab} />
+      </div>
+
+      {/* Modern Search Bar */}
+      <div className="relative">
+        <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
+          <Search className="h-5 w-5 text-gray-400" />
+        </div>
+        <input
+          type="text"
+          placeholder="Search orders by order number, customer, or menu item..."
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="w-full pl-12 pr-4 py-3.5 bg-white border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 shadow-sm hover:shadow-md text-gray-700 placeholder-gray-400"
+        />
+      </div>
+
+      {/* Modern Table Card */}
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+        <div className="px-6 py-4 bg-linear-to-r from-orange-50 to-amber-50 border-b border-gray-100">
+          <div className="flex items-center gap-2">
+            <Receipt className="w-5 h-5 text-orange-600" />
+            <h2 className="text-lg font-semibold text-gray-800">All Orders</h2>
+            <span className="ml-2 px-2.5 py-0.5 bg-orange-100 text-orange-700 text-xs font-medium rounded-full">
+              {orders.length}
+            </span>
+          </div>
+        </div>
         <DataTable
           columns={columns}
           data={orders}
@@ -326,32 +357,45 @@ export default function OrdersPage() {
         title="Add Order"
         size="lg"
         footer={
-          <>
-            <Button
-              variant="outline"
-              onClick={() => {
-                setIsModalOpen(false);
-                resetForm();
-              }}
-            >
-              Cancel
-            </Button>
-            <Button variant="primary" onClick={handleSubmit}>
-              Create Order
-            </Button>
-          </>
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-semibold text-gray-700">Total:</span>
+              <span className="text-lg font-bold text-orange-600">
+                LKR {calculateTotal().toLocaleString()}
+              </span>
+            </div>
+            <div className="flex items-center gap-3">
+              <Button
+                variant="outline"
+                onClick={() => {
+                  setIsModalOpen(false);
+                  resetForm();
+                }}
+                className="px-6 py-2.5"
+              >
+                Cancel
+              </Button>
+              <Button
+                variant="primary"
+                onClick={handleSubmit}
+                className="px-6 py-2.5 bg-linear-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-md shadow-orange-500/30"
+              >
+                Create Order
+              </Button>
+            </div>
+          </div>
         }
       >
-        <form onSubmit={handleSubmit} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-5">
           {/* Customer Selection */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Customer (Optional)
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Customer <span className="text-gray-400 font-normal">(Optional)</span>
             </label>
             <select
               value={formData.customer_id}
               onChange={(e) => setFormData({ ...formData, customer_id: e.target.value })}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white cursor-pointer"
             >
               <option value="">Select a customer (optional)</option>
               {customers.map((customer) => (
@@ -364,53 +408,59 @@ export default function OrdersPage() {
 
           {/* Order Items */}
           <div>
-            <div className="flex items-center justify-between mb-2">
-              <label className="block text-sm font-medium text-gray-700">
-                Menu Items *
+            <div className="flex items-center justify-between mb-3">
+              <label className="block text-sm font-semibold text-gray-700">
+                Menu Items <span className="text-red-500">*</span>
               </label>
-              <Button
+              <button
                 type="button"
-                variant="outline"
                 onClick={handleAddItem}
-                className="text-sm"
+                className="flex items-center gap-2 px-4 py-2 bg-linear-to-r from-orange-500 to-orange-600 text-white font-medium rounded-xl shadow-md shadow-orange-500/30 hover:shadow-lg hover:shadow-orange-500/40 hover:from-orange-600 hover:to-orange-700 transition-all duration-200 text-sm"
               >
-                <Plus className="w-4 h-4 mr-1 inline" />
+                <Plus className="w-4 h-4" />
                 Add Item
-              </Button>
+              </button>
             </div>
             {formData.items.length === 0 ? (
-              <p className="text-sm text-gray-500 py-4 text-center border border-dashed border-gray-300 rounded-lg">
-                No items added. Click &quot;Add Item&quot; to add menu items to this order.
-              </p>
+              <div className="py-8 text-center border-2 border-dashed border-gray-300 rounded-xl bg-gray-50">
+                <ShoppingCart className="w-12 h-12 text-gray-400 mx-auto mb-3" />
+                <p className="text-sm text-gray-500 font-medium">No items added</p>
+                <p className="text-xs text-gray-400 mt-1">Click &quot;Add Item&quot; to add menu items to this order</p>
+              </div>
             ) : (
-              <div className="space-y-3">
+              <div className="space-y-4">
                 {formData.items.map((item, index) => {
                   const selectedMenuItem = menuItems.find((mi) => mi.id === item.menu_item_id);
                   return (
                     <div
                       key={index}
-                      className="p-4 border border-gray-300 rounded-lg bg-gray-50"
+                      className="p-5 border-2 border-gray-200 rounded-xl bg-linear-to-br from-white to-gray-50 hover:border-orange-300 transition-all duration-200"
                     >
-                      <div className="flex items-start justify-between mb-3">
-                        <h4 className="font-medium text-gray-900">Item {index + 1}</h4>
+                      <div className="flex items-start justify-between mb-4">
+                        <div className="flex items-center gap-2">
+                          <div className="w-8 h-8 rounded-lg bg-orange-100 flex items-center justify-center">
+                            <span className="text-sm font-bold text-orange-600">{index + 1}</span>
+                          </div>
+                          <h4 className="font-semibold text-gray-900">Item {index + 1}</h4>
+                        </div>
                         <button
                           type="button"
                           onClick={() => handleRemoveItem(index)}
-                          className="text-red-600 hover:text-red-800"
+                          className="p-2 text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg transition-all duration-200"
                         >
-                          <X className="w-4 h-4" />
+                          <X className="w-5 h-5" />
                         </button>
                       </div>
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Menu Item *
+                          <label className="block text-xs font-semibold text-gray-700 mb-2">
+                            Menu Item <span className="text-red-500">*</span>
                           </label>
                           <select
                             required
                             value={item.menu_item_id}
                             onChange={(e) => handleItemChange(index, 'menu_item_id', e.target.value)}
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                            className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-white hover:bg-gray-50 cursor-pointer text-sm"
                           >
                             <option value="">Select menu item</option>
                             {menuItems.map((menuItem) => (
@@ -421,8 +471,8 @@ export default function OrdersPage() {
                           </select>
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
-                            Quantity *
+                          <label className="block text-xs font-semibold text-gray-700 mb-2">
+                            Quantity <span className="text-red-500">*</span>
                           </label>
                           <input
                             type="number"
@@ -432,11 +482,11 @@ export default function OrdersPage() {
                             onChange={(e) =>
                               handleItemChange(index, 'quantity', parseInt(e.target.value) || 1)
                             }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                            className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-white hover:bg-gray-50 text-sm"
                           />
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                          <label className="block text-xs font-semibold text-gray-700 mb-2">
                             Unit Price (LKR)
                           </label>
                           <input
@@ -448,31 +498,32 @@ export default function OrdersPage() {
                             onChange={(e) =>
                               handleItemChange(index, 'unit_price', parseFloat(e.target.value) || 0)
                             }
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500 text-sm"
+                            className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 text-sm"
                             disabled={!!selectedMenuItem}
                           />
                           {selectedMenuItem && (
-                            <p className="text-xs text-gray-500 mt-1">
+                            <p className="text-xs text-gray-500 mt-1.5 flex items-center gap-1">
+                              <span className="w-1 h-1 rounded-full bg-gray-400"></span>
                               Auto-filled from menu item
                             </p>
                           )}
                         </div>
                         <div>
-                          <label className="block text-xs font-medium text-gray-600 mb-1">
+                          <label className="block text-xs font-semibold text-gray-700 mb-2">
                             Subtotal (LKR)
                           </label>
                           <input
                             type="text"
-                            value={(item.unit_price * item.quantity).toLocaleString()}
+                            value={`LKR ${(item.unit_price * item.quantity).toLocaleString()}`}
                             disabled
-                            className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-100 text-sm font-medium"
+                            className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl bg-orange-50 text-sm font-semibold text-orange-700"
                           />
                         </div>
                       </div>
-                      {selectedMenuItem && (
-                        <p className="text-xs text-gray-500 mt-2">
-                          {selectedMenuItem.description || 'No description'}
-                        </p>
+                      {selectedMenuItem && selectedMenuItem.description && (
+                        <div className="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
+                          <p className="text-xs text-gray-600">{selectedMenuItem.description}</p>
+                        </div>
                       )}
                     </div>
                   );
@@ -481,28 +532,16 @@ export default function OrdersPage() {
             )}
           </div>
 
-          {/* Total */}
-          {formData.items.length > 0 && (
-            <div className="border-t pt-3">
-              <div className="flex justify-between items-center">
-                <span className="text-lg font-semibold text-gray-900">Total:</span>
-                <span className="text-lg font-bold text-green-600">
-                  LKR {calculateTotal().toLocaleString()}
-                </span>
-              </div>
-            </div>
-          )}
-
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">
-              Notes (Optional)
+            <label className="block text-sm font-semibold text-gray-700 mb-2">
+              Notes <span className="text-gray-400 font-normal">(Optional)</span>
             </label>
             <textarea
               value={formData.notes}
               onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
               rows={3}
-              className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-500"
+              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white resize-none"
               placeholder="Additional notes for this order..."
             />
           </div>
