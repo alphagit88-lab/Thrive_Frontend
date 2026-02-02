@@ -44,13 +44,24 @@ export default function UsersPage() {
   useEffect(() => {
     if (!hasInitialized.current && loggedInUser) {
       hasInitialized.current = true;
-      // Use logged-in user's location - users can only access their own location
-      const userLocationId = loggedInUser.location_id;
-      if (userLocationId) {
+
+      let targetLocationId = loggedInUser.location_id;
+
+      // If admin, respect the selected location from localStorage
+      if (loggedInUser.role === 'admin') {
+        const stored = localStorage.getItem('locationId');
+        if (stored) {
+          targetLocationId = stored;
+        }
+      }
+
+      if (targetLocationId) {
         startTransition(() => {
-          setLocationId(userLocationId);
-          // Also update localStorage to keep it in sync
-          localStorage.setItem('locationId', userLocationId);
+          setLocationId(targetLocationId);
+          // Only sync back to storage if it's the user's home location being set initially
+          if (!localStorage.getItem('locationId')) {
+            localStorage.setItem('locationId', targetLocationId);
+          }
         });
       }
     }
@@ -89,17 +100,69 @@ export default function UsersPage() {
   }, [search]);
 
   useEffect(() => {
-    // Use logged-in user's location - users can only access their own location
-    const userLocationId = loggedInUser?.location_id || locationId;
-    if (userLocationId) {
-      loadUsers(userLocationId);
-      setFormData((prev) => ({ ...prev, location_id: userLocationId }));
-      // Update locationId state to keep it in sync
-      if (userLocationId !== locationId) {
-        setLocationId(userLocationId);
+    // Determine the active location ID
+    let activeLocationId = locationId;
+
+    // If not admin, FORCE their assigned location
+    if (loggedInUser && loggedInUser.role !== 'admin') {
+      activeLocationId = loggedInUser.location_id;
+    }
+    // If admin and no location selected yet, fallback to home location
+    else if (!activeLocationId && loggedInUser) {
+      activeLocationId = loggedInUser.location_id;
+    }
+
+    if (activeLocationId) {
+      // Only load if the location has changed or it's the first effective load
+      // Note: We can add a ref to track lastLoadedLocation if needed to avoid dupes, 
+      // but dependency array handles most.
+      loadUsers(activeLocationId);
+
+      setFormData((prev) => ({ ...prev, location_id: activeLocationId }));
+
+      // Update state if we calculated a fallback
+      if (activeLocationId !== locationId) {
+        setLocationId(activeLocationId);
       }
     }
-  }, [loggedInUser?.location_id, locationId, loadUsers]);
+  }, [loggedInUser, locationId, loadUsers]);
+
+  // Listen for storage events (in case header changes location)
+  useEffect(() => {
+    const handleStorageChange = (e: StorageEvent) => {
+      if (e.key === 'locationId' && e.newValue && loggedInUser?.role === 'admin') {
+        setLocationId(e.newValue);
+      }
+    };
+
+    // Also set up a custom event listener if the app uses one for faster switching
+    const handleLocationChange = (e: any) => {
+      if (loggedInUser?.role === 'admin' && e.detail?.locationId) {
+        setLocationId(e.detail.locationId);
+      }
+    };
+
+    window.addEventListener('storage', handleStorageChange);
+    window.addEventListener('locationChanged', handleLocationChange);
+
+    // Check localStorage periodically or on focus to catch changes from other tabs/components
+    const checkStorage = () => {
+      if (loggedInUser?.role === 'admin') {
+        const stored = localStorage.getItem('locationId');
+        if (stored && stored !== locationId) {
+          setLocationId(stored);
+        }
+      }
+    };
+    const interval = setInterval(checkStorage, 1000);
+
+    return () => {
+      window.removeEventListener('storage', handleStorageChange);
+      window.removeEventListener('locationChanged', handleLocationChange);
+      clearInterval(interval);
+    };
+  }, [loggedInUser, locationId]);
+
 
   // Close actions menu when clicking outside
   useEffect(() => {
@@ -115,10 +178,11 @@ export default function UsersPage() {
   }, [showActionsMenu]);
 
   const resetForm = () => {
-    // Always use the logged-in user's location
-    const userLocationId = loggedInUser?.location_id || locationId || '';
+    // Use current active location
+    const activeLocationId = locationId || loggedInUser?.location_id || '';
+
     setFormData({
-      location_id: userLocationId,
+      location_id: activeLocationId,
       email: '',
       password: '',
       name: '',
@@ -137,15 +201,15 @@ export default function UsersPage() {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     try {
-      // Ensure we're using the logged-in user's location
-      const userLocationId = loggedInUser?.location_id || locationId;
-      if (!userLocationId) {
+      const activeLocationId = locationId || loggedInUser?.location_id;
+
+      if (!activeLocationId) {
         alert('Location not found. Please refresh the page.');
         return;
       }
 
       if (editingUser) {
-        // For update, only send password if it's provided
+        // For update
         const updateData: Partial<UserForm> & { account_status?: string; password?: string } = {
           email: formData.email,
           name: formData.name,
@@ -158,21 +222,23 @@ export default function UsersPage() {
         }
         await usersService.update(editingUser.id, updateData);
       } else {
-        // For create, password is required
+        // For create
         if (!formData.password || formData.password.trim() === '') {
           alert('Password is required for new users');
           return;
         }
-        // Use logged-in user's location - users can only create users for their own location
+
+        // Ensure we explicitly verify permissions server-side too, 
+        // but here we just pass the location we want to add the user to.
         await usersService.create({
           ...formData,
-          location_id: userLocationId,
+          location_id: activeLocationId,
         });
       }
       setIsModalOpen(false);
       resetForm();
-      if (userLocationId) {
-        loadUsers(userLocationId);
+      if (activeLocationId) {
+        loadUsers(activeLocationId);
       }
     } catch (error) {
       console.error('Failed to save user:', error);
@@ -443,18 +509,22 @@ export default function UsersPage() {
             <div className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl bg-gray-100 flex items-center gap-2">
               <MapPin className="w-4 h-4 text-gray-500" />
               <span className="text-sm font-medium text-gray-700">
-                {editingUser 
+                {editingUser
                   ? (editingUser.location_name || getLocationName(editingUser.location_id))
-                  : (getLocationName(loggedInUser?.location_id || locationId))
+                  : (getLocationName(locationId || loggedInUser?.location_id || ''))
                 }
               </span>
               <span className="ml-auto text-xs text-gray-500 italic">
-                {editingUser ? '(Cannot be changed)' : '(Your location)'}
+                {editingUser
+                  ? '(Cannot be changed)'
+                  : (loggedInUser?.role === 'admin' ? '(Selected location)' : '(Your location)')}
               </span>
             </div>
             <p className="text-xs text-gray-500 mt-2 flex items-center gap-1">
               <span className="w-1 h-1 rounded-full bg-gray-400"></span>
-              Users can only be added to your assigned location
+              {loggedInUser?.role === 'admin'
+                ? 'Users will be added to the currently selected location'
+                : 'Users can only be added to your assigned location'}
             </p>
           </div>
 

@@ -13,22 +13,22 @@ export default function SettingsPage() {
   const [specifications, setSpecifications] = useState<Specification[]>([]);
   const [cookTypes, setCookTypes] = useState<CookType[]>([]);
   const [loading, setLoading] = useState(true);
-  
+
   // Dropdown menu states
   const [openMenu, setOpenMenu] = useState<{ type: string; id: string } | null>(null);
-  
+
   // Modals
   const [categoryModalOpen, setCategoryModalOpen] = useState(false);
   const [typeModalOpen, setTypeModalOpen] = useState(false);
   const [specModalOpen, setSpecModalOpen] = useState(false);
   const [cookTypeModalOpen, setCookTypeModalOpen] = useState(false);
-  
+
   // Edit states
   const [editingCategory, setEditingCategory] = useState<FoodCategory | null>(null);
   const [editingType, setEditingType] = useState<FoodType | null>(null);
   const [editingSpec, setEditingSpec] = useState<Specification | null>(null);
   const [editingCookType, setEditingCookType] = useState<CookType | null>(null);
-  
+
   // Forms
   const [categoryForm, setCategoryForm] = useState({ name: '', display_order: 0, show_specification: true, show_cook_type: true });
   const [typeForm, setTypeForm] = useState({ category_id: '', name: '' });
@@ -287,7 +287,7 @@ export default function SettingsPage() {
         </div>
         <div>
           <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Settings</h1>
-          
+
           <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
             Dashboard &gt; Settings &gt; List
           </p>
@@ -295,7 +295,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Food Categories */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
         <div className="px-6 py-4 bg-linear-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -333,14 +333,13 @@ export default function SettingsPage() {
               categories.map((cat) => (
                 <div
                   key={cat.id}
-                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-blue-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                  className={`group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-blue-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${openMenu?.type === 'category' && openMenu?.id === cat.id ? 'z-30' : 'z-0'
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 truncate">{cat.name}</h3>
-                      {cat.display_order !== undefined && (
-                        <p className="text-xs text-gray-500 mt-1">Order: {cat.display_order}</p>
-                      )}
+
                     </div>
                     <div className="relative ml-2">
                       <button
@@ -377,7 +376,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Food Types */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
         <div className="px-6 py-4 bg-linear-to-r from-green-50 to-emerald-50 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -415,7 +414,8 @@ export default function SettingsPage() {
               types.map((type) => (
                 <div
                   key={type.id}
-                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-green-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                  className={`group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-green-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${openMenu?.type === 'type' && openMenu?.id === type.id ? 'z-30' : 'z-0'
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -456,7 +456,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Specifications */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
         <div className="px-6 py-4 bg-linear-to-r from-orange-50 to-amber-50 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -494,7 +494,8 @@ export default function SettingsPage() {
               specifications.map((spec) => (
                 <div
                   key={spec.id}
-                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-orange-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                  className={`group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-orange-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${openMenu?.type === 'spec' && openMenu?.id === spec.id ? 'z-30' : 'z-0'
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -535,7 +536,7 @@ export default function SettingsPage() {
       </div>
 
       {/* Cook Types */}
-      <div className="bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden">
+      <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
         <div className="px-6 py-4 bg-linear-to-r from-red-50 to-rose-50 border-b border-gray-100">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
@@ -573,7 +574,8 @@ export default function SettingsPage() {
               cookTypes.map((cook) => (
                 <div
                   key={cook.id}
-                  className="group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-red-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105"
+                  className={`group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-red-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${openMenu?.type === 'cookType' && openMenu?.id === cook.id ? 'z-30' : 'z-0'
+                    }`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
@@ -649,15 +651,7 @@ export default function SettingsPage() {
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
             />
           </div>
-          <div>
-            <label className="block text-sm font-semibold text-gray-700 mb-2">Display Order</label>
-            <input
-              type="number"
-              value={categoryForm.display_order}
-              onChange={(e) => setCategoryForm({ ...categoryForm, display_order: parseInt(e.target.value) || 0 })}
-              className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
-            />
-          </div>
+
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-3 cursor-pointer group">
               <input
@@ -698,7 +692,7 @@ export default function SettingsPage() {
             <Button
               variant="primary"
               onClick={handleCreateType}
-                className="px-6 py-2.5 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-md shadow-green-500/30"
+              className="px-6 py-2.5 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-md shadow-green-500/30"
             >
               {editingType ? 'Update' : 'Add Type'}
             </Button>
@@ -845,6 +839,6 @@ export default function SettingsPage() {
           </div>
         </form>
       </Modal>
-    </div>
+    </div >
   );
 }

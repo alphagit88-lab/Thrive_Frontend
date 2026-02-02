@@ -4,9 +4,10 @@ import { useEffect, useState, useRef, startTransition, useCallback } from 'react
 import Image from 'next/image';
 import { menuService } from '@/services/menu.service';
 import { settingsService } from '@/services/settings.service';
-import { MenuItem, MenuItemForm, FoodCategory, FoodType, Specification, CookType } from '@/types';
+import { ingredientsService } from '@/services/ingredients.service';
+import { MenuItem, MenuItemForm, FoodCategory, FoodType, Specification, CookType, Ingredient } from '@/types';
 import Tabs from '@/components/Tabs';
-import { Plus, MoreVertical, Upload, X, Pencil, Trash2, Save, UtensilsCrossed, Search, ChefHat } from 'lucide-react';
+import { Plus, MoreVertical, Upload, X, Pencil, Trash2, Save, UtensilsCrossed, Search, ChefHat, Info } from 'lucide-react';
 
 export default function MenuPage() {
   const [locationId, setLocationId] = useState<string>('');
@@ -19,6 +20,7 @@ export default function MenuPage() {
   const [foodTypes, setFoodTypes] = useState<FoodType[]>([]);
   const [specifications, setSpecifications] = useState<Specification[]>([]);
   const [cookTypes, setCookTypes] = useState<CookType[]>([]);
+  const [availableIngredients, setAvailableIngredients] = useState<Ingredient[]>([]);
   const [editingItems, setEditingItems] = useState<Record<string, MenuItemForm>>({});
   const [openMenu, setOpenMenu] = useState<string | null>(null);
 
@@ -99,11 +101,15 @@ export default function MenuPage() {
 
   const loadSettings = async () => {
     try {
-      const [catRes] = await Promise.all([
+      const [catRes, ingRes] = await Promise.all([
         settingsService.categories.getAll(),
+        ingredientsService.getAll(),
       ]);
       if (catRes.success && catRes.data) {
         setCategories(catRes.data);
+      }
+      if (ingRes.success && ingRes.data) {
+        setAvailableIngredients(ingRes.data);
       }
     } catch (error) {
       console.error('Failed to load settings:', error);
@@ -254,6 +260,73 @@ export default function MenuPage() {
     }
   };
 
+  const handleAddIngredient = (itemId: string, ingredientId: string) => {
+    if (!ingredientId) return;
+    const item = editingItems[itemId];
+    const newIngredients = [...(item.ingredients || [])];
+
+    // Check if duplicate
+    if (newIngredients.some(i => i.ingredient_id === ingredientId)) {
+      alert('Ingredient already added');
+      return;
+    }
+
+    newIngredients.push({
+      ingredient_id: ingredientId,
+      ingredient_quantity_id: undefined,
+      custom_quantity: undefined
+    });
+
+    setEditingItems(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        ingredients: newIngredients
+      }
+    }));
+  };
+
+  const handleRemoveIngredient = (itemId: string, index: number) => {
+    const item = editingItems[itemId];
+    const newIngredients = [...(item.ingredients || [])];
+    newIngredients.splice(index, 1);
+
+    setEditingItems(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        ingredients: newIngredients
+      }
+    }));
+  };
+
+  const handleIngredientUpdate = (itemId: string, index: number, field: 'ingredient_quantity_id' | 'custom_quantity', value: string) => {
+    const item = editingItems[itemId];
+    const newIngredients = [...(item.ingredients || [])];
+
+    if (field === 'ingredient_quantity_id') {
+      newIngredients[index] = {
+        ...newIngredients[index],
+        ingredient_quantity_id: value || undefined,
+        custom_quantity: undefined // clear custom if selecting predefined
+      };
+    } else {
+      newIngredients[index] = {
+        ...newIngredients[index],
+        custom_quantity: value,
+        ingredient_quantity_id: undefined // clear predefined if typing custom
+      };
+    }
+
+    setEditingItems(prev => ({
+      ...prev,
+      [itemId]: {
+        ...prev[itemId],
+        ingredients: newIngredients
+      }
+    }));
+  };
+
   const handlePhotoUpload = (itemId: string, e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files || files.length === 0) return;
@@ -263,7 +336,7 @@ export default function MenuPage() {
 
     // Filter only image files
     const imageFiles = Array.from(files).filter((file) => file.type.startsWith('image/'));
-    
+
     if (imageFiles.length === 0) {
       alert('Please select image files only.');
       e.target.value = '';
@@ -455,152 +528,154 @@ export default function MenuPage() {
           {menuItems
             .filter((item, index, self) => self.findIndex((t) => t.id === item.id) === index) // Additional deduplication safeguard
             .map((item) => {
-            const itemData = editingItems[item.id];
-            if (!itemData) return null;
+              const itemData = editingItems[item.id];
+              if (!itemData) return null;
 
-            const category = getItemCategory(item);
-            const itemFoodTypes = getItemFoodTypes(item.food_category_id || undefined);
-            const itemSpecifications = getItemSpecifications(itemData.food_type_id);
-            const itemCookTypes = getItemCookTypes(item.food_category_id || undefined);
-            const tags = itemData.tags?.split(',').filter(Boolean) || [];
-            const prepWorkoutTags = itemData.prep_workout?.split(',').filter(Boolean) || [];
+              const category = getItemCategory(item);
+              const itemFoodTypes = getItemFoodTypes(item.food_category_id || undefined);
+              const itemSpecifications = getItemSpecifications(itemData.food_type_id);
+              const itemCookTypes = getItemCookTypes(item.food_category_id || undefined);
+              const tags = itemData.tags?.split(',').filter(Boolean) || [];
+              const prepWorkoutTags = itemData.prep_workout?.split(',').filter(Boolean) || [];
 
-            return (
-              <div key={`menu-item-${item.id}`} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative hover:shadow-xl transition-all duration-300">
-                {/* Options Menu - 3 Dots */}
-                <div className="absolute top-6 right-6">
-                  <button
-                    onClick={(e) => handleMenuClick(item.id, e)}
-                    className="text-gray-400 hover:text-gray-600 relative z-10 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-                  >
-                    <MoreVertical className="w-5 h-5" />
-                  </button>
-                  {/* Dropdown Menu */}
-                  {openMenu === item.id && (
-                    <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl z-20 border border-gray-200 overflow-hidden">
-                      <button
-                        onClick={() => handleEdit(item.id)}
-                        className="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        <Pencil className="w-4 h-4 mr-3 text-gray-500" /> Edit
-                      </button>
-                      <button
-                        onClick={() => handleUpdate(item.id)}
-                        className="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                      >
-                        <Save className="w-4 h-4 mr-3 text-gray-500" /> Update
-                      </button>
-                      <div className="border-t border-gray-100"></div>
-                      <button
-                        onClick={() => handleDelete(item.id)}
-                        className="flex items-center w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                      >
-                        <Trash2 className="w-4 h-4 mr-3" /> Delete
-                      </button>
+              return (
+                <div key={`menu-item-${item.id}`} className="bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative hover:shadow-xl transition-all duration-300">
+                  {/* Options Menu - 3 Dots */}
+                  <div className="absolute top-6 right-6">
+                    <button
+                      onClick={(e) => handleMenuClick(item.id, e)}
+                      className="text-gray-400 hover:text-gray-600 relative z-10 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                    >
+                      <MoreVertical className="w-5 h-5" />
+                    </button>
+                    {/* Dropdown Menu */}
+                    {openMenu === item.id && (
+                      <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl z-20 border border-gray-200 overflow-hidden">
+                        <button
+                          onClick={() => handleEdit(item.id)}
+                          className="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <Pencil className="w-4 h-4 mr-3 text-gray-500" /> Edit
+                        </button>
+                        <button
+                          onClick={() => handleUpdate(item.id)}
+                          className="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                        >
+                          <Save className="w-4 h-4 mr-3 text-gray-500" /> Update
+                        </button>
+                        <div className="border-t border-gray-100"></div>
+                        <button
+                          onClick={() => handleDelete(item.id)}
+                          className="flex items-center w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                        >
+                          <Trash2 className="w-4 h-4 mr-3" /> Delete
+                        </button>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* ID Header */}
+                  <div className="mb-6 pb-4 border-b border-gray-100">
+                    <div className="flex items-center gap-2">
+                      <div className="p-2 bg-green-50 rounded-lg">
+                        <ChefHat className="w-4 h-4 text-green-600" />
+                      </div>
+                      <h3 className="font-bold text-lg text-gray-900">
+                        {(() => {
+                          // Format display ID: display_id from DB is like "#001", we want "ID ##001"
+                          if (item.display_id) {
+                            // Remove any leading # characters and pad to 3 digits
+                            const num = item.display_id.replace(/^#+/, '');
+                            return `ID ##${num.padStart(3, '0')}`;
+                          }
+                          // Fallback: use index + 1 (temporary until display_id is set by trigger)
+                          // Sort by created_at to get consistent ordering
+                          const sortedItems = [...menuItems].sort((a, b) =>
+                            new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
+                          );
+                          const index = sortedItems.findIndex((m) => m.id === item.id);
+                          return `ID ##${String((index >= 0 ? index : sortedItems.length) + 1).padStart(3, '0')}`;
+                        })()}
+                      </h3>
                     </div>
-                  )}
-                </div>
+                  </div>
 
-                {/* ID Header */}
-                <div className="mb-6 pb-4 border-b border-gray-100">
-                  <div className="flex items-center gap-2">
-                    <div className="p-2 bg-green-50 rounded-lg">
-                      <ChefHat className="w-4 h-4 text-green-600" />
+                  <div className="space-y-4">
+                    {/* Name */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 block mb-2">Name</label>
+                      <input
+                        type="text"
+                        data-item-id={item.id}
+                        data-field="name"
+                        value={itemData.name}
+                        onChange={(e) => handleItemChange(item.id, 'name', e.target.value)}
+                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
+                      />
                     </div>
-                    <h3 className="font-bold text-lg text-gray-900">
-                      {(() => {
-                        // Format display ID: display_id from DB is like "#001", we want "ID ##001"
-                        if (item.display_id) {
-                          // Remove any leading # characters and pad to 3 digits
-                          const num = item.display_id.replace(/^#+/, '');
-                          return `ID ##${num.padStart(3, '0')}`;
-                        }
-                        // Fallback: use index + 1 (temporary until display_id is set by trigger)
-                        // Sort by created_at to get consistent ordering
-                        const sortedItems = [...menuItems].sort((a, b) => 
-                          new Date(a.created_at).getTime() - new Date(b.created_at).getTime()
-                        );
-                        const index = sortedItems.findIndex((m) => m.id === item.id);
-                        return `ID ##${String((index >= 0 ? index : sortedItems.length) + 1).padStart(3, '0')}`;
-                      })()}
-                    </h3>
-                  </div>
-                </div>
 
-                <div className="space-y-4">
-                  {/* Name */}
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 block mb-2">Name</label>
-                    <input
-                      type="text"
-                      data-item-id={item.id}
-                      data-field="name"
-                      value={itemData.name}
-                      onChange={(e) => handleItemChange(item.id, 'name', e.target.value)}
-                      className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
-                    />
-                  </div>
+                    {/* Status field - Removed as per wireframe */
+                    }
 
-                  {/* Food Category */}
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 block mb-2">Food Category</label>
-                    <select
-                      value={itemData.food_category_id || ''}
-                      onChange={(e) => {
-                        handleItemChange(item.id, 'food_category_id', e.target.value);
-                        handleItemChange(item.id, 'food_type_id', '');
-                        handleItemChange(item.id, 'specification_id', '');
-                      }}
-                      className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
-                    >
-                      <option value="">Select</option>
-                      {categories.map((cat) => (
-                        <option key={cat.id} value={cat.id}>
-                          {cat.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    {/* Food Category */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 block mb-2">Food Category</label>
+                      <select
+                        value={itemData.food_category_id || ''}
+                        onChange={(e) => {
+                          handleItemChange(item.id, 'food_category_id', e.target.value);
+                          handleItemChange(item.id, 'food_type_id', '');
+                          handleItemChange(item.id, 'specification_id', '');
+                        }}
+                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
+                      >
+                        <option value="">Select</option>
+                        {categories.map((cat) => (
+                          <option key={cat.id} value={cat.id}>
+                            {cat.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  {/* Food Type */}
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 block mb-2">Food type</label>
-                    <select
-                      value={itemData.food_type_id || ''}
-                      onChange={(e) => {
-                        handleItemChange(item.id, 'food_type_id', e.target.value);
-                        handleItemChange(item.id, 'specification_id', '');
-                      }}
-                      className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                      disabled={!itemData.food_category_id}
-                    >
-                      <option value="">Select</option>
-                      {itemFoodTypes.map((type) => (
-                        <option key={type.id} value={type.id}>
-                          {type.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
+                    {/* Food Type */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 block mb-2">Food type</label>
+                      <select
+                        value={itemData.food_type_id || ''}
+                        onChange={(e) => {
+                          handleItemChange(item.id, 'food_type_id', e.target.value);
+                          handleItemChange(item.id, 'specification_id', '');
+                        }}
+                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
+                        disabled={!itemData.food_category_id}
+                      >
+                        <option value="">Select</option>
+                        {itemFoodTypes.map((type) => (
+                          <option key={type.id} value={type.id}>
+                            {type.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-                  {/* Qty */}
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 block mb-2">Qty</label>
-                    <select
-                      value={itemData.quantity || ''}
-                      onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}
-                      className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
-                    >
-                      <option value="">Select</option>
-                      <option value="100g">100g</option>
-                      <option value="200g">200g</option>
-                      <option value="300g">300g</option>
-                      <option value="400g">400g</option>
-                    </select>
-                  </div>
+                    {/* Qty */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 block mb-2">Qty</label>
+                      <select
+                        value={itemData.quantity || ''}
+                        onChange={(e) => handleItemChange(item.id, 'quantity', e.target.value)}
+                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
+                      >
+                        <option value="">Select</option>
+                        <option value="100g">100g</option>
+                        <option value="200g">200g</option>
+                        <option value="300g">300g</option>
+                        <option value="400g">400g</option>
+                      </select>
+                    </div>
 
-                  {/* Specification */}
-                  {category?.show_specification && (
+                    {/* Specification */}
                     <div>
                       <label className="text-xs font-semibold text-gray-700 block mb-2">Specification</label>
                       <select
@@ -617,10 +692,8 @@ export default function MenuPage() {
                         ))}
                       </select>
                     </div>
-                  )}
 
-                  {/* Type of cook */}
-                  {category?.show_cook_type && (
+                    {/* Type of cook */}
                     <div>
                       <label className="text-xs font-semibold text-gray-700 block mb-2">Type of cook</label>
                       <select
@@ -636,150 +709,223 @@ export default function MenuPage() {
                         ))}
                       </select>
                     </div>
-                  )}
 
-                  {/* Description */}
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 block mb-2">Description</label>
-                    <textarea
-                      value={itemData.description || ''}
-                      onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
-                      rows={3}
-                      className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white resize-none"
-                    />
-                  </div>
+                    {/* Description */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 block mb-2">Description</label>
+                      <textarea
+                        value={itemData.description || ''}
+                        onChange={(e) => handleItemChange(item.id, 'description', e.target.value)}
+                        rows={3}
+                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white resize-none"
+                      />
+                    </div>
 
-                  {/* Photos */}
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 block mb-2">Photos</label>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      multiple
-                      id={`photo-upload-${item.id}`}
-                      className="hidden"
-                      onChange={(e) => handlePhotoUpload(item.id, e)}
-                    />
-                    <button
-                      type="button"
-                      className="w-full px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all duration-200 flex items-center justify-center gap-2 text-gray-600 hover:text-green-600 font-medium"
-                      onClick={() => document.getElementById(`photo-upload-${item.id}`)?.click()}
-                    >
-                      <Upload className="w-4 h-4" />
-                      Upload Photos
-                    </button>
-                    {itemData.photos && itemData.photos.length > 0 && (
-                      <div className="mt-3 grid grid-cols-3 gap-3">
-                        {itemData.photos.map((photo, photoIdx) => (
-                          <div key={photoIdx} className="relative group w-full h-24 rounded-xl overflow-hidden border-2 border-gray-200 hover:border-green-500 transition-all duration-200">
-                            <Image
-                              src={photo}
-                              alt={`Photo ${photoIdx + 1}`}
-                              fill
-                              className="object-cover"
-                              unoptimized={photo.startsWith('data:')}
-                            />
+                    {/* Photos */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 block mb-2">Photos</label>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        multiple
+                        id={`photo-upload-${item.id}`}
+                        className="hidden"
+                        onChange={(e) => handlePhotoUpload(item.id, e)}
+                      />
+                      <button
+                        type="button"
+                        className="w-full px-4 py-2.5 border-2 border-dashed border-gray-300 rounded-xl hover:border-green-500 hover:bg-green-50 transition-all duration-200 flex items-center justify-center gap-2 text-gray-600 hover:text-green-600 font-medium"
+                        onClick={() => document.getElementById(`photo-upload-${item.id}`)?.click()}
+                      >
+                        <Upload className="w-4 h-4" />
+                        Upload Photos
+                      </button>
+                      {itemData.photos && itemData.photos.length > 0 && (
+                        <div className="mt-3 grid grid-cols-3 gap-3">
+                          {itemData.photos.map((photo, photoIdx) => (
+                            <div key={photoIdx} className="relative group w-full h-24 rounded-xl overflow-hidden border-2 border-gray-200 hover:border-green-500 transition-all duration-200">
+                              <Image
+                                src={photo}
+                                alt={`Photo ${photoIdx + 1}`}
+                                fill
+                                className="object-cover"
+                                unoptimized={photo.startsWith('data:')}
+                              />
+                              <button
+                                type="button"
+                                onClick={() => handleRemovePhoto(item.id, photoIdx)}
+                                className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg hover:bg-red-600"
+                              >
+                                <X className="w-3.5 h-3.5" />
+                              </button>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+                    </div>
+
+                    {/* Ingredients */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 block mb-2">Ingredients</label>
+                      <div className="space-y-3 mb-3">
+                        {itemData.ingredients?.map((ing, idx) => {
+                          const fullIngredient = availableIngredients.find(i => i.id === ing.ingredient_id);
+                          const quantities = fullIngredient?.quantities || [];
+
+                          return (
+                            <div key={`${item.id}-ing-${idx}`} className="flex flex-col gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-gray-800 text-sm">{fullIngredient?.name || 'Unknown Ingredient'}</span>
+                                <button
+                                  type="button"
+                                  onClick={() => handleRemoveIngredient(item.id, idx)}
+                                  className="text-red-500 hover:text-red-700 p-1 bg-white rounded-lg shadow-sm border border-gray-100 hover:bg-red-50 transition-colors"
+                                  title="Remove ingredient"
+                                >
+                                  <X className="w-3.5 h-3.5" />
+                                </button>
+                              </div>
+
+                              <div className="w-full">
+                                {quantities.length > 0 ? (
+                                  <select
+                                    value={ing.ingredient_quantity_id || ''}
+                                    onChange={(e) => handleIngredientUpdate(item.id, idx, 'ingredient_quantity_id', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white outline-none"
+                                  >
+                                    <option value="">Select Quantity</option>
+                                    {quantities.map(q => (
+                                      <option key={q.id} value={q.id}>
+                                        {q.quantity_value} {q.quantity_grams ? `(${q.quantity_grams}g)` : ''}
+                                      </option>
+                                    ))}
+                                  </select>
+                                ) : (
+                                  <input
+                                    type="text"
+                                    placeholder="Custom quantity (e.g., 50g)"
+                                    value={ing.custom_quantity || ''}
+                                    onChange={(e) => handleIngredientUpdate(item.id, idx, 'custom_quantity', e.target.value)}
+                                    className="w-full px-3 py-2 text-sm border-2 border-gray-200 rounded-lg focus:ring-1 focus:ring-green-500 focus:border-green-500 bg-white outline-none"
+                                  />
+                                )}
+                              </div>
+                            </div>
+                          );
+                        })}
+                      </div>
+
+                      <div className="relative">
+                        <select
+                          value=""
+                          onChange={(e) => {
+                            if (e.target.value) {
+                              handleAddIngredient(item.id, e.target.value);
+                              // Reset is handled by value=""
+                            }
+                          }}
+                          className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white text-sm text-gray-600"
+                        >
+                          <option value="">+ Add Ingredient</option>
+                          {availableIngredients
+                            .filter(ing => !itemData.ingredients?.some(i => i.ingredient_id === ing.id))
+                            .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                            .map(ing => (
+                              <option key={ing.id} value={ing.id}>{ing.name}</option>
+                            ))
+                          }
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Price */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 block mb-2">Price</label>
+                      <input
+                        type="number"
+                        value={itemData.price || 0}
+                        onChange={(e) => handleItemChange(item.id, 'price', parseFloat(e.target.value) || 0)}
+                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
+                      />
+                    </div>
+
+                    {/* Tags */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 block mb-2">Tags</label>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {tags.map((tag, idx) => (
+                          <span
+                            key={`${item.id}-tag-${idx}-${tag}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 text-green-700 rounded-full text-xs font-medium hover:bg-green-100 transition-colors"
+                          >
+                            {tag}
                             <button
-                              type="button"
-                              onClick={() => handleRemovePhoto(item.id, photoIdx)}
-                              className="absolute top-2 right-2 bg-red-500 text-white rounded-full p-1.5 opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg hover:bg-red-600"
+                              onClick={() => handleDeleteTag(item.id, idx)}
+                              className="text-green-600 hover:text-green-800 transition-colors"
                             >
-                              <X className="w-3.5 h-3.5" />
+                              <X className="w-3 h-3" />
                             </button>
-                          </div>
+                          </span>
                         ))}
                       </div>
-                    )}
-                  </div>
-
-                  {/* Price */}
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 block mb-2">Price</label>
-                    <input
-                      type="number"
-                      value={itemData.price || 0}
-                      onChange={(e) => handleItemChange(item.id, 'price', parseFloat(e.target.value) || 0)}
-                      className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
-                    />
-                  </div>
-
-                  {/* Tags */}
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 block mb-2">Tags</label>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {tags.map((tag, idx) => (
-                        <span
-                          key={`${item.id}-tag-${idx}-${tag}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-green-50 border border-green-200 text-green-700 rounded-full text-xs font-medium hover:bg-green-100 transition-colors"
-                        >
-                          {tag}
-                          <button
-                            onClick={() => handleDeleteTag(item.id, idx)}
-                            className="text-green-600 hover:text-green-800 transition-colors"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Add tag and press Enter..."
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          handleAddTag(item.id, e.currentTarget.value);
-                          e.currentTarget.value = '';
-                        }
-                      }}
-                      className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
-                    />
-                  </div>
-
-                  {/* Menu Item Tags (Prep Workout) */}
-                  <div>
-                    <label className="text-xs font-semibold text-gray-700 block mb-2">Menu Item</label>
-                    <div className="flex flex-wrap gap-2 mb-3">
-                      {prepWorkoutTags.map((tag, idx) => (
-                        <span
-                          key={`${item.id}-prep-${idx}-${tag}`}
-                          className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-full text-xs font-medium hover:bg-blue-100 transition-colors"
-                        >
-                          {tag}
-                          <button
-                            onClick={() => {
-                              const newTags = [...prepWorkoutTags];
-                              newTags.splice(idx, 1);
-                              handleItemChange(item.id, 'prep_workout', newTags.join(','));
-                            }}
-                            className="text-blue-600 hover:text-blue-800 transition-colors"
-                          >
-                            <X className="w-3 h-3" />
-                          </button>
-                        </span>
-                      ))}
-                    </div>
-                    <input
-                      type="text"
-                      placeholder="Add menu item tag and press Enter..."
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter') {
-                          e.preventDefault();
-                          const tag = e.currentTarget.value.trim();
-                          if (tag && !prepWorkoutTags.includes(tag)) {
-                            const newTags = [...prepWorkoutTags, tag];
-                            handleItemChange(item.id, 'prep_workout', newTags.join(','));
+                      <input
+                        type="text"
+                        placeholder="Add tag and press Enter..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            handleAddTag(item.id, e.currentTarget.value);
                             e.currentTarget.value = '';
                           }
-                        }
-                      }}
-                      className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
-                    />
+                        }}
+                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
+                      />
+                    </div>
+
+                    {/* Menu Item Tags (Prep Workout) */}
+                    <div>
+                      <label className="text-xs font-semibold text-gray-700 block mb-2">Menu Item</label>
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        {prepWorkoutTags.map((tag, idx) => (
+                          <span
+                            key={`${item.id}-prep-${idx}-${tag}`}
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-blue-50 border border-blue-200 text-blue-700 rounded-full text-xs font-medium hover:bg-blue-100 transition-colors"
+                          >
+                            {tag}
+                            <button
+                              onClick={() => {
+                                const newTags = [...prepWorkoutTags];
+                                newTags.splice(idx, 1);
+                                handleItemChange(item.id, 'prep_workout', newTags.join(','));
+                              }}
+                              className="text-blue-600 hover:text-blue-800 transition-colors"
+                            >
+                              <X className="w-3 h-3" />
+                            </button>
+                          </span>
+                        ))}
+                      </div>
+                      <input
+                        type="text"
+                        placeholder="Add menu item tag and press Enter..."
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const tag = e.currentTarget.value.trim();
+                            if (tag && !prepWorkoutTags.includes(tag)) {
+                              const newTags = [...prepWorkoutTags, tag];
+                              handleItemChange(item.id, 'prep_workout', newTags.join(','));
+                              e.currentTarget.value = '';
+                            }
+                          }
+                        }}
+                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
+                      />
+                    </div>
                   </div>
                 </div>
-              </div>
-            );
-          })}
+              );
+            })}
         </div>
       )}
 
