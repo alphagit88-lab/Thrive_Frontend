@@ -382,9 +382,6 @@ export default function SettingsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 truncate">{cat.name}</h3>
-                      {cat.location_id && (
-                        <span className="text-xs text-indigo-500 font-medium">location</span>
-                      )}
                     </div>
                     <div className="relative ml-2">
                       <button
@@ -454,7 +451,6 @@ export default function SettingsPage() {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 truncate">{type.name}</h3>
                       {type.category_name && <p className="text-xs text-gray-400 mt-0.5 truncate">{type.category_name}</p>}
-                      {type.location_id && <span className="text-xs text-indigo-500 font-medium">location</span>}
                     </div>
                     <div className="relative ml-2">
                       <button onClick={(e) => handleMenuClick('type', type.id, e)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
@@ -521,7 +517,6 @@ export default function SettingsPage() {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 truncate">{spec.name}</h3>
                       {spec.food_type_name && <p className="text-xs text-gray-400 mt-0.5 truncate">{spec.food_type_name}</p>}
-                      {spec.location_id && <span className="text-xs text-indigo-500 font-medium">location</span>}
                     </div>
                     <div className="relative ml-2">
                       <button onClick={(e) => handleMenuClick('spec', spec.id, e)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
@@ -588,7 +583,6 @@ export default function SettingsPage() {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 truncate">{cook.name}</h3>
                       {cook.category_name && <p className="text-xs text-gray-400 mt-0.5 truncate">{cook.category_name}</p>}
-                      {cook.location_id && <span className="text-xs text-indigo-500 font-medium">location</span>}
                     </div>
                     <div className="relative ml-2">
                       <button onClick={(e) => handleMenuClick('cookType', cook.id, e)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
