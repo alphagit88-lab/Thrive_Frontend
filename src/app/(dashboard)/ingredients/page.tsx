@@ -284,6 +284,10 @@ export default function IngredientsPage() {
 
   const handleSubmit = async () => {
     try {
+      if (!formData.name || !formData.name.trim()) {
+        alert('Please enter an ingredient name');
+        return;
+      }
       if (!formData.food_type_id) {
         alert('Please select a food type');
         return;

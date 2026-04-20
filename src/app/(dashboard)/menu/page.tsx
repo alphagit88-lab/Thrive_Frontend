@@ -871,9 +871,9 @@ export default function MenuPage() {
                           <option value="">+ Add Ingredient</option>
                           {availableIngredients
                             .filter(ing => !itemData.ingredients?.some(i => i.ingredient_id === ing.id))
-                            .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+                            .sort((a, b) => (a.name || 'Unnamed Ingredient').localeCompare(b.name || 'Unnamed Ingredient'))
                             .map(ing => (
-                              <option key={ing.id} value={ing.id}>{ing.name}</option>
+                              <option key={ing.id} value={ing.id}>{ing.name || 'Unnamed Ingredient'}</option>
                             ))
                           }
                         </select>
