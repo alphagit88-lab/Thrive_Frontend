@@ -41,5 +41,17 @@ export const ingredientsService = {
     const response = await apiClient.delete<ApiResponse<{ message: string }>>(`/ingredients/${id}`);
     return response.data;
   },
+
+  // POST /api/upload
+  uploadImage: async (file: File): Promise<ApiResponse<{ url: string; filename: string }>> => {
+    const formData = new FormData();
+    formData.append('image', file);
+    const response = await apiClient.post<ApiResponse<{ url: string; filename: string }>>('/upload', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  },
 };
 

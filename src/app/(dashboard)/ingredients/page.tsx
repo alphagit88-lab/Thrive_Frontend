@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { ingredientsService } from '@/services/ingredients.service';
 import { settingsService } from '@/services/settings.service';
 import { Ingredient, FoodCategory, FoodType, Specification, CookType } from '@/types';
@@ -14,6 +14,7 @@ interface IngredientFormLocal {
   cook_type_ids: string[];
   name: string;
   description: string;
+  photos: string[];
   quantities: {
     quantity_value: string;
     quantity_grams?: number;
@@ -31,6 +32,8 @@ export default function IngredientsPage() {
   const [cookTypes, setCookTypes] = useState<CookType[]>([]);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [locationId, setLocationId] = useState<string>('');
 
@@ -41,6 +44,7 @@ export default function IngredientsPage() {
     cook_type_ids: [],
     name: '',
     description: '',
+    photos: [],
     quantities: [
       { quantity_value: '100g', quantity_grams: 100, price: 0, is_available: true },
       { quantity_value: '200g', quantity_grams: 200, price: 0, is_available: true },
@@ -158,6 +162,45 @@ export default function IngredientsPage() {
     }
   };
 
+  const handleAddPhoto = (url: string) => {
+    if (!url) return;
+    setFormData(prev => ({
+      ...prev,
+      photos: [...prev.photos, url]
+    }));
+  };
+
+  const handleRemovePhoto = (index: number) => {
+    setFormData(prev => {
+      const newPhotos = [...prev.photos];
+      newPhotos.splice(index, 1);
+      return { ...prev, photos: newPhotos };
+    });
+  };
+
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    try {
+      setIsUploading(true);
+      const response = await ingredientsService.uploadImage(file);
+      if (response.success && response.data) {
+        setFormData(prev => ({
+          ...prev,
+          photos: [...prev.photos, response.data!.url]
+        }));
+      }
+    } catch (error) {
+      console.error('Upload failed:', error);
+      alert('Failed to upload image. Please try again.');
+    } finally {
+      setIsUploading(false);
+      // Reset input so same file can be uploaded again if needed
+      if (e.target) e.target.value = '';
+    }
+  };
+
   const handleToggleId = (field: 'specification_ids' | 'cook_type_ids', id: string) => {
     const current = [...formData[field]];
     const idx = current.indexOf(id);
@@ -189,6 +232,7 @@ export default function IngredientsPage() {
       cook_type_ids: ingredient.cook_type_ids || [],
       name: ingredient.name || '',
       description: ingredient.description || '',
+      photos: ingredient.photos?.map(p => typeof p === 'string' ? p : p.photo_url) || [],
       quantities: ingredient.quantities && ingredient.quantities.length > 0
         ? ingredient.quantities.map(qty => ({
             quantity_value: qty.quantity_value,
@@ -228,6 +272,7 @@ export default function IngredientsPage() {
       cook_type_ids: [],
       name: '',
       description: '',
+      photos: [],
       quantities: [
         { quantity_value: '100g', quantity_grams: 100, price: 0, is_available: true },
         { quantity_value: '200g', quantity_grams: 200, price: 0, is_available: true },
@@ -528,6 +573,54 @@ export default function IngredientsPage() {
             </div>
           )}
 
+          {/* Photo Upload Section */}
+          <div className="space-y-4">
+            <label className="text-xs font-semibold text-gray-700 block">Photos</label>
+            <div className="flex flex-wrap gap-4">
+              {formData.photos.map((photo, i) => (
+                <div key={i} className="relative group w-24 h-24 rounded-xl overflow-hidden border-2 border-gray-100 shadow-sm">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img src={photo} alt="Ingredient" className="w-full h-full object-cover" />
+                  <button 
+                    type="button"
+                    onClick={() => handleRemovePhoto(i)}
+                    className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                  </button>
+                </div>
+              ))}
+              
+              <input 
+                type="file"
+                ref={fileInputRef}
+                onChange={handleFileUpload}
+                accept="image/*"
+                className="hidden"
+              />
+              
+              <button 
+                type="button"
+                disabled={isUploading}
+                onClick={() => fileInputRef.current?.click()}
+                className={`w-24 h-24 rounded-xl border-2 border-dashed flex flex-col items-center justify-center gap-1.5 transition-all duration-200 group ${
+                  isUploading 
+                    ? 'border-gray-200 bg-gray-50 cursor-not-allowed' 
+                    : 'border-gray-200 hover:border-black hover:bg-gray-50'
+                }`}
+              >
+                {isUploading ? (
+                  <div className="w-6 h-6 border-2 border-black border-t-transparent rounded-full animate-spin"></div>
+                ) : (
+                  <Plus className="w-6 h-6 text-gray-400 group-hover:text-black transition-colors" />
+                )}
+                <span className="text-[10px] text-gray-500 font-bold tracking-tight group-hover:text-black uppercase">
+                  {isUploading ? 'Uploading...' : 'Add Photo'}
+                </span>
+              </button>
+            </div>
+          </div>
+
           {/* SAVE Button */}
           <div className="flex justify-end pt-4 border-t border-gray-100">
             <button
@@ -580,13 +673,20 @@ export default function IngredientsPage() {
                     </div>
                   )}
                 </div>
-                <div className="pr-8">
-                  <div className="flex items-center gap-2 mb-3">
-                    <div className="p-2 bg-purple-50 rounded-lg">
-                      <Package className="w-4 h-4 text-purple-600" />
+                <div className="flex gap-4">
+                  {ing.photos && ing.photos.length > 0 && (
+                    <div className="w-20 h-20 rounded-xl overflow-hidden border border-gray-100 shrink-0">
+                      {/* eslint-disable-next-line @next/next/no-img-element */}
+                      <img src={ing.photos[0].photo_url} alt={ing.name} className="w-full h-full object-cover" />
                     </div>
-                    <h3 className="font-bold text-base text-gray-900">{ing.name || ing.food_type_name}</h3>
-                  </div>
+                  )}
+                  <div className="flex-1 min-w-0 pr-8">
+                    <div className="flex items-center gap-2 mb-3">
+                      <div className="p-2 bg-purple-50 rounded-lg">
+                        <Package className="w-4 h-4 text-purple-600" />
+                      </div>
+                      <h3 className="font-bold text-base text-gray-900 truncate">{ing.name || ing.food_type_name}</h3>
+                    </div>
                   {/* Multiple specifications */}
                   {ing.specification_names && ing.specification_names.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-2">
@@ -620,6 +720,7 @@ export default function IngredientsPage() {
                       </div>
                     </div>
                   )}
+                  </div>
                 </div>
               </div>
             ))}

@@ -440,8 +440,8 @@ export default function MenuPage() {
     );
   }
 
-  const getItemCategory = (item: MenuItem) => {
-    return categories.find((c) => c.id === item.food_category_id);
+  const getItemCategory = (categoryId?: string) => {
+    return categories.find((c) => c.id === categoryId);
   };
 
   const getItemFoodTypes = (categoryId?: string) => {
@@ -532,10 +532,10 @@ export default function MenuPage() {
               const itemData = editingItems[item.id];
               if (!itemData) return null;
 
-              const category = getItemCategory(item);
-              const itemFoodTypes = getItemFoodTypes(item.food_category_id || undefined);
+              const category = getItemCategory(itemData.food_category_id);
+              const itemFoodTypes = getItemFoodTypes(itemData.food_category_id);
               const itemSpecifications = getItemSpecifications(itemData.food_type_id);
-              const itemCookTypes = getItemCookTypes(item.food_category_id || undefined);
+              const itemCookTypes = getItemCookTypes(itemData.food_category_id);
               const tags = itemData.tags?.split(',').filter(Boolean) || [];
               const prepWorkoutTags = itemData.prep_workout?.split(',').filter(Boolean) || [];
 
