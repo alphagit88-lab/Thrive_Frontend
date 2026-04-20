@@ -39,3 +39,11 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# Agent generated files
+.gemini/
+scratch/
+test-*.ts
+test-*.tsx
+check-*.ts
+check-*.tsx

@@ -18,6 +18,7 @@ export interface Location {
 // Food Category
 export interface FoodCategory {
   id: string;
+  location_id?: string;
   name: string;
   display_order: number;
   show_specification: boolean;
@@ -29,6 +30,7 @@ export interface FoodCategory {
 // Food Type
 export interface FoodType {
   id: string;
+  location_id?: string;
   category_id: string;
   name: string;
   created_at: string;
@@ -39,6 +41,7 @@ export interface FoodType {
 // Specification
 export interface Specification {
   id: string;
+  location_id?: string;
   food_type_id: string;
   name: string;
   created_at: string;
@@ -49,6 +52,7 @@ export interface Specification {
 // Cook Type
 export interface CookType {
   id: string;
+  location_id?: string;
   category_id: string;
   name: string;
   created_at: string;
@@ -66,12 +70,22 @@ export interface IngredientQuantity {
   created_at: string;
 }
 
+// Ingredient Photo
+export interface IngredientPhoto {
+  id: string;
+  ingredient_id: string;
+  photo_url: string;
+  display_order: number;
+  created_at: string;
+}
+
 // Ingredient
 export interface Ingredient {
   id: string;
+  location_id?: string;
   food_type_id: string;
-  specification_id?: string;
-  cook_type_id?: string;
+  specification_ids?: string[];
+  cook_type_ids?: string[];
   name?: string;
   description?: string;
   is_active: boolean;
@@ -80,9 +94,10 @@ export interface Ingredient {
   food_type_name?: string;
   category_id?: string;
   category_name?: string;
-  specification_name?: string;
-  cook_type_name?: string;
+  specification_names?: string[];
+  cook_type_names?: string[];
   quantities?: IngredientQuantity[];
+  photos?: IngredientPhoto[];
 }
 
 // Menu Item Photo
@@ -99,10 +114,10 @@ export interface MenuItemIngredient {
   id: string;
   menu_item_id: string;
   ingredient_id: string;
+  ingredient_name?: string;
   ingredient_quantity_id?: string;
   custom_quantity?: string;
   created_at: string;
-  ingredient_name?: string;
   food_type_name?: string;
   quantity_value?: string;
   quantity_price?: number;
@@ -128,8 +143,10 @@ export interface MenuItem {
   updated_at: string;
   category_name?: string;
   food_type_name?: string;
-  specification_name?: string;
-  cook_type_name?: string;
+  specification_ids?: string[];
+  specification_names?: string[];
+  cook_type_ids?: string[];
+  cook_type_names?: string[];
   location_name?: string;
   photos?: MenuItemPhoto[];
   ingredients?: MenuItemIngredient[];
@@ -226,9 +243,10 @@ export interface LocationForm {
 }
 
 export interface IngredientForm {
+  location_id: string;
   food_type_id: string;
-  specification_id?: string;
-  cook_type_id?: string;
+  specification_ids: string[];
+  cook_type_ids: string[];
   name?: string;
   description?: string;
   quantities: {
@@ -237,6 +255,7 @@ export interface IngredientForm {
     price: number;
     is_available: boolean;
   }[];
+  photos?: string[];
 }
 
 export interface MenuItemForm {
@@ -245,8 +264,8 @@ export interface MenuItemForm {
   food_category_id?: string;
   food_type_id?: string;
   quantity?: string;
-  specification_id?: string;
-  cook_type_id?: string;
+  specification_ids?: string[];
+  cook_type_ids?: string[];
   description?: string;
   price: number;
   tags?: string;

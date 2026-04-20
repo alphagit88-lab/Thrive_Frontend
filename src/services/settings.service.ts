@@ -8,15 +8,15 @@ import { FoodCategory, FoodType, Specification, CookType, ApiResponse } from '@/
 export const settingsService = {
   // Food Categories
   categories: {
-    getAll: async (): Promise<ApiResponse<FoodCategory[]>> => {
-      const response = await apiClient.get<ApiResponse<FoodCategory[]>>('/settings/categories');
+    getAll: async (location_id?: string): Promise<ApiResponse<FoodCategory[]>> => {
+      const response = await apiClient.get<ApiResponse<FoodCategory[]>>('/settings/categories', { params: { location_id } });
       return response.data;
     },
     getById: async (id: string): Promise<ApiResponse<FoodCategory>> => {
       const response = await apiClient.get<ApiResponse<FoodCategory>>(`/settings/categories/${id}`);
       return response.data;
     },
-    create: async (data: { name: string; display_order?: number; show_specification?: boolean; show_cook_type?: boolean }): Promise<ApiResponse<FoodCategory>> => {
+    create: async (data: { name: string; display_order?: number; show_specification?: boolean; show_cook_type?: boolean; location_id?: string }): Promise<ApiResponse<FoodCategory>> => {
       const response = await apiClient.post<ApiResponse<FoodCategory>>('/settings/categories', data);
       return response.data;
     },
@@ -32,15 +32,15 @@ export const settingsService = {
 
   // Food Types
   types: {
-    getAll: async (category_id?: string): Promise<ApiResponse<FoodType[]>> => {
-      const response = await apiClient.get<ApiResponse<FoodType[]>>('/settings/types', { params: { category_id } });
+    getAll: async (category_id?: string, location_id?: string): Promise<ApiResponse<FoodType[]>> => {
+      const response = await apiClient.get<ApiResponse<FoodType[]>>('/settings/types', { params: { category_id, location_id } });
       return response.data;
     },
     getById: async (id: string): Promise<ApiResponse<FoodType>> => {
       const response = await apiClient.get<ApiResponse<FoodType>>(`/settings/types/${id}`);
       return response.data;
     },
-    create: async (data: { category_id: string; name: string }): Promise<ApiResponse<FoodType>> => {
+    create: async (data: { category_id: string; name: string; location_id?: string }): Promise<ApiResponse<FoodType>> => {
       const response = await apiClient.post<ApiResponse<FoodType>>('/settings/types', data);
       return response.data;
     },
@@ -56,11 +56,11 @@ export const settingsService = {
 
   // Specifications
   specifications: {
-    getAll: async (food_type_id?: string): Promise<ApiResponse<Specification[]>> => {
-      const response = await apiClient.get<ApiResponse<Specification[]>>('/settings/specifications', { params: { food_type_id } });
+    getAll: async (food_type_id?: string, location_id?: string): Promise<ApiResponse<Specification[]>> => {
+      const response = await apiClient.get<ApiResponse<Specification[]>>('/settings/specifications', { params: { food_type_id, location_id } });
       return response.data;
     },
-    create: async (data: { food_type_id: string; name: string }): Promise<ApiResponse<Specification>> => {
+    create: async (data: { food_type_id: string; name: string; location_id?: string }): Promise<ApiResponse<Specification>> => {
       const response = await apiClient.post<ApiResponse<Specification>>('/settings/specifications', data);
       return response.data;
     },
@@ -76,11 +76,11 @@ export const settingsService = {
 
   // Cook Types
   cookTypes: {
-    getAll: async (category_id?: string): Promise<ApiResponse<CookType[]>> => {
-      const response = await apiClient.get<ApiResponse<CookType[]>>('/settings/cook-types', { params: { category_id } });
+    getAll: async (category_id?: string, location_id?: string): Promise<ApiResponse<CookType[]>> => {
+      const response = await apiClient.get<ApiResponse<CookType[]>>('/settings/cook-types', { params: { category_id, location_id } });
       return response.data;
     },
-    create: async (data: { category_id: string; name: string }): Promise<ApiResponse<CookType>> => {
+    create: async (data: { category_id: string; name: string; location_id?: string }): Promise<ApiResponse<CookType>> => {
       const response = await apiClient.post<ApiResponse<CookType>>('/settings/cook-types', data);
       return response.data;
     },
@@ -94,4 +94,3 @@ export const settingsService = {
     },
   },
 };
-

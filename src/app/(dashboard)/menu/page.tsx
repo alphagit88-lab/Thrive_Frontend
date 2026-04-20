@@ -68,18 +68,19 @@ export default function MenuPage() {
             food_category_id: item.food_category_id || '',
             food_type_id: item.food_type_id || '',
             quantity: item.quantity || '',
-            specification_id: item.specification_id || '',
-            cook_type_id: item.cook_type_id || '',
+            specification_ids: item.specification_ids || [],
+            cook_type_ids: item.cook_type_ids || [],
             description: item.description || '',
             price: item.price,
             tags: item.tags || '',
             prep_workout: item.prep_workout || '',
             status: item.status,
             photos: item.photos?.map((p: { photo_url: string }) => p.photo_url) || [],
-            ingredients: item.ingredients?.map((ing: { ingredient_id: string; ingredient_quantity_id?: string; custom_quantity?: string }) => ({
+            ingredients: item.ingredients?.map((ing: any) => ({
               ingredient_id: ing.ingredient_id,
               ingredient_quantity_id: ing.ingredient_quantity_id || undefined,
               custom_quantity: ing.custom_quantity || undefined,
+              ingredient_name: ing.ingredient_name,
             })) || [],
           };
         });
@@ -102,8 +103,8 @@ export default function MenuPage() {
   const loadSettings = async () => {
     try {
       const [catRes, ingRes] = await Promise.all([
-        settingsService.categories.getAll(),
-        ingredientsService.getAll(),
+        settingsService.categories.getAll(locationId),
+        ingredientsService.getAll({ location_id: locationId }),
       ]);
       if (catRes.success && catRes.data) {
         setCategories(catRes.data);
@@ -126,8 +127,8 @@ export default function MenuPage() {
 
     categoryIds.forEach((categoryId) => {
       Promise.all([
-        settingsService.types.getAll(categoryId),
-        settingsService.cookTypes.getAll(categoryId),
+        settingsService.types.getAll(categoryId, locationId),
+        settingsService.cookTypes.getAll(categoryId, locationId),
       ]).then(([typesRes, cookTypesRes]) => {
         if (typesRes.success && typesRes.data) {
           setFoodTypes((prev) => {
@@ -158,7 +159,7 @@ export default function MenuPage() {
     );
 
     foodTypeIds.forEach((foodTypeId) => {
-      settingsService.specifications.getAll(foodTypeId).then((response) => {
+      settingsService.specifications.getAll(foodTypeId, locationId).then((response) => {
         if (response.success && response.data) {
           setSpecifications((prev) => {
             // Deduplicate by ID
@@ -177,7 +178,7 @@ export default function MenuPage() {
       [itemId]: {
         ...prev[itemId],
         [field]: value,
-        ...(field === 'food_type_id' && { specification_id: '' }), // Reset specification when food type changes
+        ...(field === 'food_type_id' && { specification_ids: [] }), // Reset specifications when food type changes
       },
     }));
   };
@@ -196,8 +197,8 @@ export default function MenuPage() {
         name: itemData.name.trim(),
         food_category_id: itemData.food_category_id || undefined,
         food_type_id: itemData.food_type_id || undefined,
-        specification_id: itemData.specification_id || undefined,
-        cook_type_id: itemData.cook_type_id || undefined,
+        specification_ids: itemData.specification_ids || [],
+        cook_type_ids: itemData.cook_type_ids || [],
         quantity: itemData.quantity || undefined,
         description: itemData.description || undefined,
         tags: itemData.tags || undefined,
@@ -223,8 +224,8 @@ export default function MenuPage() {
         food_category_id: undefined,
         food_type_id: undefined,
         quantity: undefined,
-        specification_id: undefined,
-        cook_type_id: undefined,
+        specification_ids: [],
+        cook_type_ids: [],
         description: undefined,
         price: 0,
         tags: undefined,
@@ -625,7 +626,7 @@ export default function MenuPage() {
                         onChange={(e) => {
                           handleItemChange(item.id, 'food_category_id', e.target.value);
                           handleItemChange(item.id, 'food_type_id', '');
-                          handleItemChange(item.id, 'specification_id', '');
+                          handleItemChange(item.id, 'specification_ids', []);
                         }}
                         className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
                       >
@@ -645,7 +646,7 @@ export default function MenuPage() {
                         value={itemData.food_type_id || ''}
                         onChange={(e) => {
                           handleItemChange(item.id, 'food_type_id', e.target.value);
-                          handleItemChange(item.id, 'specification_id', '');
+                          handleItemChange(item.id, 'specification_ids', []);
                         }}
                         className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
                         disabled={!itemData.food_category_id}
@@ -675,39 +676,80 @@ export default function MenuPage() {
                       </select>
                     </div>
 
-                    {/* Specification */}
+                    {/* Specification (Multi-select) */}
                     <div>
                       <label className="text-xs font-semibold text-gray-700 block mb-2">Specification</label>
-                      <select
-                        value={itemData.specification_id || ''}
-                        onChange={(e) => handleItemChange(item.id, 'specification_id', e.target.value)}
-                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                        disabled={!itemData.food_type_id}
-                      >
-                        <option value="">Select</option>
-                        {itemSpecifications.map((spec) => (
-                          <option key={spec.id} value={spec.id}>
-                            {spec.name}
-                          </option>
-                        ))}
-                      </select>
+                      {!itemData.food_type_id ? (
+                        <p className="text-xs text-gray-400 italic bg-gray-50 p-3 rounded-xl border-2 border-dashed border-gray-200">Select a food type first</p>
+                      ) : itemSpecifications.length === 0 ? (
+                        <p className="text-xs text-gray-400 italic bg-gray-50 p-3 rounded-xl border-2 border-dashed border-gray-200">No specifications available for this food type</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-xl border-2 border-gray-200">
+                          {itemSpecifications.map((spec) => (
+                            <label
+                              key={spec.id}
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                                itemData.specification_ids?.includes(spec.id)
+                                  ? 'bg-green-100 border-green-500 text-green-700'
+                                  : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="hidden"
+                                checked={itemData.specification_ids?.includes(spec.id)}
+                                onChange={(e) => {
+                                  const current = itemData.specification_ids || [];
+                                  if (e.target.checked) {
+                                    handleItemChange(item.id, 'specification_ids', [...current, spec.id]);
+                                  } else {
+                                    handleItemChange(item.id, 'specification_ids', current.filter(id => id !== spec.id));
+                                  }
+                                }}
+                              />
+                              <span className="text-xs font-medium">{spec.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
-                    {/* Type of cook */}
+                    {/* Type of cook (Multi-select) */}
                     <div>
                       <label className="text-xs font-semibold text-gray-700 block mb-2">Type of cook</label>
-                      <select
-                        value={itemData.cook_type_id || ''}
-                        onChange={(e) => handleItemChange(item.id, 'cook_type_id', e.target.value)}
-                        className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-green-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
-                      >
-                        <option value="">Select</option>
-                        {itemCookTypes.map((cook) => (
-                          <option key={cook.id} value={cook.id}>
-                            {cook.name}
-                          </option>
-                        ))}
-                      </select>
+                      {!itemData.food_category_id ? (
+                        <p className="text-xs text-gray-400 italic bg-gray-50 p-3 rounded-xl border-2 border-dashed border-gray-200">Select a category first</p>
+                      ) : itemCookTypes.length === 0 ? (
+                        <p className="text-xs text-gray-400 italic bg-gray-50 p-3 rounded-xl border-2 border-dashed border-gray-200">No cook types available for this category</p>
+                      ) : (
+                        <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-xl border-2 border-gray-200">
+                          {itemCookTypes.map((cook) => (
+                            <label
+                              key={cook.id}
+                              className={`flex items-center gap-2 px-3 py-1.5 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
+                                itemData.cook_type_ids?.includes(cook.id)
+                                  ? 'bg-green-100 border-green-500 text-green-700'
+                                  : 'bg-white border-gray-200 text-gray-600 hover:border-gray-300'
+                              }`}
+                            >
+                              <input
+                                type="checkbox"
+                                className="hidden"
+                                checked={itemData.cook_type_ids?.includes(cook.id)}
+                                onChange={(e) => {
+                                  const current = itemData.cook_type_ids || [];
+                                  if (e.target.checked) {
+                                    handleItemChange(item.id, 'cook_type_ids', [...current, cook.id]);
+                                  } else {
+                                    handleItemChange(item.id, 'cook_type_ids', current.filter(id => id !== cook.id));
+                                  }
+                                }}
+                              />
+                              <span className="text-xs font-medium">{cook.name}</span>
+                            </label>
+                          ))}
+                        </div>
+                      )}
                     </div>
 
                     {/* Description */}
@@ -775,7 +817,7 @@ export default function MenuPage() {
                           return (
                             <div key={`${item.id}-ing-${idx}`} className="flex flex-col gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
                               <div className="flex items-center justify-between">
-                                <span className="font-medium text-gray-800 text-sm">{fullIngredient?.name || 'Unknown Ingredient'}</span>
+                                <span className="font-medium text-gray-800 text-sm">{fullIngredient?.name || (ing as any).ingredient_name || 'Unknown Ingredient'}</span>
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveIngredient(item.id, idx)}

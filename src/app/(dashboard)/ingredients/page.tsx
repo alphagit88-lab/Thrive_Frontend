@@ -3,9 +3,24 @@
 import { useEffect, useState } from 'react';
 import { ingredientsService } from '@/services/ingredients.service';
 import { settingsService } from '@/services/settings.service';
-import { Ingredient, IngredientForm, FoodCategory, FoodType, Specification, CookType } from '@/types';
+import { Ingredient, FoodCategory, FoodType, Specification, CookType } from '@/types';
 import Tabs from '@/components/Tabs';
 import { Plus, MoreVertical, Pencil, Trash2, Save, Apple, Package } from 'lucide-react';
+
+interface IngredientFormLocal {
+  location_id: string;
+  food_type_id: string;
+  specification_ids: string[];
+  cook_type_ids: string[];
+  name: string;
+  description: string;
+  quantities: {
+    quantity_value: string;
+    quantity_grams?: number;
+    price: number;
+    is_available: boolean;
+  }[];
+}
 
 export default function IngredientsPage() {
   const [categories, setCategories] = useState<FoodCategory[]>([]);
@@ -17,10 +32,13 @@ export default function IngredientsPage() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   
-  const [formData, setFormData] = useState<IngredientForm>({
+  const [locationId, setLocationId] = useState<string>('');
+
+  const [formData, setFormData] = useState<IngredientFormLocal>({
+    location_id: '',
     food_type_id: '',
-    specification_id: '',
-    cook_type_id: '',
+    specification_ids: [],
+    cook_type_ids: [],
     name: '',
     description: '',
     quantities: [
@@ -32,9 +50,18 @@ export default function IngredientsPage() {
   });
 
   useEffect(() => {
-    loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    const savedLocationId = localStorage.getItem('locationId');
+    if (savedLocationId) {
+      setLocationId(savedLocationId);
+      setFormData(prev => ({ ...prev, location_id: savedLocationId }));
+    }
   }, []);
+
+  useEffect(() => {
+    if (locationId) {
+      loadData();
+    }
+  }, [locationId]);
 
   // Reload categories when page becomes visible (user navigates back from Settings)
   useEffect(() => {
@@ -67,11 +94,10 @@ export default function IngredientsPage() {
 
   useEffect(() => {
     const category = categories.find((c) => c.id === activeCategory);
-    if (category) {
+    if (category && locationId) {
       loadFoodTypes(category.id);
       loadCookTypes(category.id);
-      // Load ingredients for the active category with quantities
-      ingredientsService.getAll({ category_id: category.id }).then((res) => {
+      ingredientsService.getAll({ category_id: category.id, location_id: locationId }).then((res) => {
         if (res.success && res.data) {
           setIngredients(res.data);
         }
@@ -79,12 +105,12 @@ export default function IngredientsPage() {
         console.error('Failed to load ingredients:', error);
       });
     }
-  }, [activeCategory, categories]);
+  }, [activeCategory, categories, locationId]);
 
   const loadData = async () => {
+    if (!locationId) return;
     try {
-      const catRes = await settingsService.categories.getAll();
-
+      const catRes = await settingsService.categories.getAll(locationId);
       if (catRes.success && catRes.data) {
         setCategories(catRes.data);
         if (catRes.data.length > 0) {
@@ -101,7 +127,7 @@ export default function IngredientsPage() {
 
   const loadFoodTypes = async (categoryId: string) => {
     try {
-      const response = await settingsService.types.getAll(categoryId);
+      const response = await settingsService.types.getAll(categoryId, locationId);
       if (response.success && response.data) {
         setFoodTypes(response.data);
       }
@@ -112,7 +138,7 @@ export default function IngredientsPage() {
 
   const loadSpecifications = async (foodTypeId: string) => {
     try {
-      const response = await settingsService.specifications.getAll(foodTypeId);
+      const response = await settingsService.specifications.getAll(foodTypeId, locationId);
       if (response.success && response.data) {
         setSpecifications(response.data);
       }
@@ -123,13 +149,24 @@ export default function IngredientsPage() {
 
   const loadCookTypes = async (categoryId: string) => {
     try {
-      const response = await settingsService.cookTypes.getAll(categoryId);
+      const response = await settingsService.cookTypes.getAll(categoryId, locationId);
       if (response.success && response.data) {
         setCookTypes(response.data);
       }
     } catch (error) {
       console.error('Failed to load cook types:', error);
     }
+  };
+
+  const handleToggleId = (field: 'specification_ids' | 'cook_type_ids', id: string) => {
+    const current = [...formData[field]];
+    const idx = current.indexOf(id);
+    if (idx > -1) {
+      current.splice(idx, 1);
+    } else {
+      current.push(id);
+    }
+    setFormData({ ...formData, [field]: current });
   };
 
   const handleQuantityChange = (index: number, field: string, value: string | number | boolean) => {
@@ -146,9 +183,10 @@ export default function IngredientsPage() {
   const handleEdit = (ingredient: Ingredient) => {
     setEditingIngredient(ingredient);
     setFormData({
+      location_id: ingredient.location_id || locationId,
       food_type_id: ingredient.food_type_id,
-      specification_id: ingredient.specification_id || '',
-      cook_type_id: ingredient.cook_type_id || '',
+      specification_ids: ingredient.specification_ids || [],
+      cook_type_ids: ingredient.cook_type_ids || [],
       name: ingredient.name || '',
       description: ingredient.description || '',
       quantities: ingredient.quantities && ingredient.quantities.length > 0
@@ -184,9 +222,10 @@ export default function IngredientsPage() {
   const handleAddNew = () => {
     setEditingIngredient(null);
     setFormData({
+      location_id: locationId,
       food_type_id: '',
-      specification_id: '',
-      cook_type_id: '',
+      specification_ids: [],
+      cook_type_ids: [],
       name: '',
       description: '',
       quantities: [
@@ -205,7 +244,6 @@ export default function IngredientsPage() {
         return;
       }
 
-      // Filter out quantities that are not available or have no price
       const validQuantities = formData.quantities.filter(qty => qty.is_available && qty.quantity_value);
 
       if (editingIngredient) {
@@ -307,37 +345,48 @@ export default function IngredientsPage() {
       )}
 
       {/* Ingredients Form Card */}
-      <div className="mt-6 bg-white rounded-2xl shadow-lg border border-gray-100 p-6 relative hover:shadow-xl transition-all duration-300">
-        {/* 3-dots Menu */}
-        {editingIngredient && (
-          <div className="absolute top-6 right-6">
-            <button
-              onClick={(e) => handleMenuClick(editingIngredient.id, e)}
-              className="text-gray-400 hover:text-gray-600 relative z-10 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-            >
-              <MoreVertical className="w-5 h-5" />
-            </button>
-            {openMenu === editingIngredient.id && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl z-20 border border-gray-200 overflow-hidden">
-                <button
-                  onClick={() => handleEdit(editingIngredient)}
-                  className="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                >
-                  <Pencil className="w-4 h-4 mr-3 text-gray-500" /> Edit
-                </button>
-                <div className="border-t border-gray-100"></div>
-                <button
-                  onClick={() => handleDelete(editingIngredient.id)}
-                  className="flex items-center w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                >
-                  <Trash2 className="w-4 h-4 mr-3" /> Delete
-                </button>
-              </div>
+      <div className="mt-6 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300">
+
+        {/* Card Header */}
+        <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/60">
+          <div>
+            <p className="text-sm font-semibold text-gray-800">
+              {editingIngredient ? 'Edit Ingredient' : 'New Ingredient'}
+            </p>
+            {editingIngredient && (
+              <p className="text-xs text-gray-400 mt-0.5">{editingIngredient.name || editingIngredient.food_type_name}</p>
             )}
           </div>
-        )}
+          {editingIngredient && (
+            <div className="relative">
+              <button
+                onClick={(e) => handleMenuClick(editingIngredient.id, e)}
+                className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <MoreVertical className="w-5 h-5" />
+              </button>
+              {openMenu === editingIngredient.id && (
+                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl z-20 border border-gray-200 overflow-hidden">
+                  <button
+                    onClick={() => handleEdit(editingIngredient)}
+                    className="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                  >
+                    <Pencil className="w-4 h-4 mr-3 text-gray-500" /> Edit
+                  </button>
+                  <div className="border-t border-gray-100"></div>
+                  <button
+                    onClick={() => handleDelete(editingIngredient.id)}
+                    className="flex items-center w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                  >
+                    <Trash2 className="w-4 h-4 mr-3" /> Delete
+                  </button>
+                </div>
+              )}
+            </div>
+          )}
+        </div>
 
-        <div className="space-y-5">
+        <div className="p-6 space-y-5">
           {/* Category Type Dropdown */}
           <div>
             <label className="text-xs font-semibold text-gray-700 block mb-2">
@@ -346,7 +395,7 @@ export default function IngredientsPage() {
             <select
               value={formData.food_type_id}
               onChange={(e) => {
-                setFormData({ ...formData, food_type_id: e.target.value, specification_id: '' });
+                setFormData({ ...formData, food_type_id: e.target.value, specification_ids: [] });
               }}
               className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
             >
@@ -362,7 +411,7 @@ export default function IngredientsPage() {
           {/* Quantity and Price Section */}
           <div>
             <div className="flex items-center justify-between mb-3">
-              <label className="text-xs font-semibold text-gray-700">Quantity & Price</label>
+              <label className="text-xs font-semibold text-gray-700">Quantity &amp; Price</label>
               <button
                 onClick={() => {
                   setFormData({
@@ -373,7 +422,7 @@ export default function IngredientsPage() {
                     ],
                   });
                 }}
-                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-black hover:text-black hover:bg-black rounded-lg transition-colors"
+                className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-black hover:text-white hover:bg-black rounded-lg transition-colors"
               >
                 <Plus className="w-3.5 h-3.5" />
                 <span>Add Quantity</span>
@@ -407,55 +456,88 @@ export default function IngredientsPage() {
             </div>
           </div>
 
-          {/* Specification */}
+          {/* Specification — checkbox group */}
           {currentCategory?.show_specification && (
             <div>
               <label className="text-xs font-semibold text-gray-700 block mb-2">Specification</label>
-              <select
-                value={formData.specification_id}
-                onChange={(e) => setFormData({ ...formData, specification_id: e.target.value })}
-                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white disabled:opacity-50 disabled:cursor-not-allowed"
-                disabled={!formData.food_type_id}
-              >
-                <option value="">Select</option>
-                {specifications.map((spec) => (
-                  <option key={spec.id} value={spec.id}>
-                    {spec.name}
-                  </option>
-                ))}
-              </select>
+              {!formData.food_type_id ? (
+                <p className="text-xs text-gray-400 italic">Select a type first</p>
+              ) : specifications.length === 0 ? (
+                <p className="text-xs text-gray-400 italic">No specifications for this type</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {specifications.map((spec) => {
+                    const selected = formData.specification_ids.includes(spec.id);
+                    return (
+                      <button
+                        key={spec.id}
+                        type="button"
+                        onClick={() => handleToggleId('specification_ids', spec.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                          selected
+                            ? 'border-black bg-black text-white'
+                            : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-400'
+                        }`}
+                      >
+                        <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                          selected ? 'bg-white border-white' : 'bg-white border-gray-300'
+                        }`}>
+                          {selected && <span className="w-2 h-2 bg-black rounded-sm block" />}
+                        </span>
+                        {spec.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
 
-          {/* Type of cook */}
+          {/* Type of cook — checkbox group */}
           {currentCategory?.show_cook_type && (
             <div>
               <label className="text-xs font-semibold text-gray-700 block mb-2">Type of cook</label>
-              <select
-                value={formData.cook_type_id}
-                onChange={(e) => setFormData({ ...formData, cook_type_id: e.target.value })}
-                className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-purple-500 focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
-              >
-                <option value="">Select</option>
-                {cookTypes.map((cook) => (
-                  <option key={cook.id} value={cook.id}>
-                    {cook.name}
-                  </option>
-                ))}
-              </select>
+              {cookTypes.length === 0 ? (
+                <p className="text-xs text-gray-400 italic">No cook types found</p>
+              ) : (
+                <div className="flex flex-wrap gap-2">
+                  {cookTypes.map((cook) => {
+                    const selected = formData.cook_type_ids.includes(cook.id);
+                    return (
+                      <button
+                        key={cook.id}
+                        type="button"
+                        onClick={() => handleToggleId('cook_type_ids', cook.id)}
+                        className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                          selected
+                            ? 'border-purple-600 bg-purple-600 text-white'
+                            : 'border-gray-200 bg-gray-50 text-gray-700 hover:border-gray-400'
+                        }`}
+                      >
+                        <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                          selected ? 'bg-white border-white' : 'bg-white border-gray-300'
+                        }`}>
+                          {selected && <span className="w-2 h-2 bg-purple-600 rounded-sm block" />}
+                        </span>
+                        {cook.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           )}
-        </div>
 
-        {/* SAVE Button */}
-        <div className="flex justify-end mt-6 pt-6 border-t border-gray-100">
-          <button
-            onClick={handleSubmit}
-            className="flex items-center justify-center gap-2.5 px-8 py-3.5 bg-linear-to-r from-black to-black text-white font-semibold rounded-xl shadow-lg  hover:shadow-xl hover:shadow-black hover:from-black hover:to-black transition-all duration-300 transform hover:scale-105 active:scale-100"
-          >
-            <Save className="w-5 h-5" />
-            <span>Save Ingredient</span>
-          </button>
+          {/* SAVE Button */}
+          <div className="flex justify-end pt-4 border-t border-gray-100">
+            <button
+              onClick={handleSubmit}
+              className="flex items-center justify-center gap-2.5 px-8 py-3.5 bg-linear-to-r from-black to-black text-white font-semibold rounded-xl shadow-lg  hover:shadow-xl hover:shadow-black hover:from-black hover:to-black transition-all duration-300 transform hover:scale-105 active:scale-100"
+            >
+              <Save className="w-5 h-5" />
+              <span>Save Ingredient</span>
+            </button>
+          </div>
         </div>
       </div>
 
@@ -505,23 +587,29 @@ export default function IngredientsPage() {
                     </div>
                     <h3 className="font-bold text-base text-gray-900">{ing.name || ing.food_type_name}</h3>
                   </div>
-                  {ing.specification_name && (
-                    <div className="mb-2">
-                      <span className="inline-flex items-center px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium">
-                        Spec: {ing.specification_name}
-                      </span>
+                  {/* Multiple specifications */}
+                  {ing.specification_names && ing.specification_names.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {ing.specification_names.map((name, i) => (
+                        <span key={i} className="inline-flex items-center px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium">
+                          {name}
+                        </span>
+                      ))}
                     </div>
                   )}
-                  {ing.cook_type_name && (
-                    <div className="mb-3">
-                      <span className="inline-flex items-center px-2.5 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-medium">
-                        Cook: {ing.cook_type_name}
-                      </span>
+                  {/* Multiple cook types */}
+                  {ing.cook_type_names && ing.cook_type_names.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-3">
+                      {ing.cook_type_names.map((name, i) => (
+                        <span key={i} className="inline-flex items-center px-2.5 py-1 bg-orange-50 text-orange-700 rounded-lg text-xs font-medium">
+                          {name}
+                        </span>
+                      ))}
                     </div>
                   )}
                   {ing.quantities && ing.quantities.length > 0 && (
                     <div className="mt-4 pt-4 border-t border-gray-100">
-                      <p className="text-xs font-semibold text-gray-700 mb-2">Quantities & Prices:</p>
+                      <p className="text-xs font-semibold text-gray-700 mb-2">Quantities &amp; Prices:</p>
                       <div className="space-y-2">
                         {ing.quantities.filter(q => q.is_available).map((qty, idx) => (
                           <div key={`${ing.id}-qty-${idx}-${qty.id || qty.quantity_value}`} className="flex items-center justify-between px-3 py-2 bg-gray-50 rounded-lg">

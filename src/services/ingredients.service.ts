@@ -7,14 +7,14 @@ import { Ingredient, IngredientForm, ApiResponse } from '@/types';
 
 export const ingredientsService = {
   // GET /api/ingredients
-  getAll: async (params?: { category_id?: string; food_type_id?: string; is_active?: boolean }): Promise<ApiResponse<Ingredient[]>> => {
+  getAll: async (params?: { location_id?: string; category_id?: string; food_type_id?: string; is_active?: boolean }): Promise<ApiResponse<Ingredient[]>> => {
     const response = await apiClient.get<ApiResponse<Ingredient[]>>('/ingredients', { params });
     return response.data;
   },
 
   // GET /api/ingredients/by-category
-  getByCategory: async (): Promise<ApiResponse<any[]>> => {
-    const response = await apiClient.get<ApiResponse<any[]>>('/ingredients/by-category');
+  getByCategory: async (location_id?: string): Promise<ApiResponse<any[]>> => {
+    const response = await apiClient.get<ApiResponse<any[]>>('/ingredients/by-category', { params: { location_id } });
     return response.data;
   },
 

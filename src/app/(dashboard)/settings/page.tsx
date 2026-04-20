@@ -2,12 +2,17 @@
 
 import { useEffect, useState } from 'react';
 import { settingsService } from '@/services/settings.service';
-import { FoodCategory, FoodType, Specification, CookType } from '@/types';
+import { locationsService } from '@/services/locations.service';
+import { FoodCategory, FoodType, Specification, CookType, Location } from '@/types';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
-import { Plus, MoreVertical, Pencil, Trash2, Settings, UtensilsCrossed, Tag, ChefHat, Sparkles } from 'lucide-react';
+import { Plus, MoreVertical, Pencil, Trash2, Settings, UtensilsCrossed, Tag, ChefHat, Sparkles, MapPin } from 'lucide-react';
 
 export default function SettingsPage() {
+  // Locations
+  const [locations, setLocations] = useState<Location[]>([]);
+  const [selectedLocationId, setSelectedLocationId] = useState<string>('');
+
   const [categories, setCategories] = useState<FoodCategory[]>([]);
   const [types, setTypes] = useState<FoodType[]>([]);
   const [specifications, setSpecifications] = useState<Specification[]>([]);
@@ -37,28 +42,41 @@ export default function SettingsPage() {
 
   // Close dropdown when clicking outside
   useEffect(() => {
-    const handleClickOutside = () => {
-      setOpenMenu(null);
-    };
-
+    const handleClickOutside = () => setOpenMenu(null);
     if (openMenu) {
       document.addEventListener('click', handleClickOutside);
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [openMenu]);
 
+  // Load locations first
   useEffect(() => {
-    loadAll();
+    locationsService.getAll().then((res) => {
+      if (res.success && res.data && res.data.length > 0) {
+        setLocations(res.data);
+        setSelectedLocationId(res.data[0].id);
+      } else {
+        setLoading(false);
+      }
+    }).catch(() => setLoading(false));
   }, []);
 
-  const loadAll = async () => {
+  // Load settings whenever location changes
+  useEffect(() => {
+    if (selectedLocationId) {
+      loadAll(selectedLocationId);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedLocationId]);
+
+  const loadAll = async (locationId: string) => {
     try {
       setLoading(true);
       const [catRes, typeRes, specRes, cookRes] = await Promise.all([
-        settingsService.categories.getAll(),
-        settingsService.types.getAll(),
-        settingsService.specifications.getAll(),
-        settingsService.cookTypes.getAll(),
+        settingsService.categories.getAll(locationId),
+        settingsService.types.getAll(undefined, locationId),
+        settingsService.specifications.getAll(undefined, locationId),
+        settingsService.cookTypes.getAll(undefined, locationId),
       ]);
 
       if (catRes.success && catRes.data) setCategories(catRes.data);
@@ -91,86 +109,65 @@ export default function SettingsPage() {
 
   const handleEditType = (type: FoodType) => {
     setEditingType(type);
-    setTypeForm({
-      category_id: type.category_id || '',
-      name: type.name,
-    });
+    setTypeForm({ category_id: type.category_id || '', name: type.name });
     setTypeModalOpen(true);
     setOpenMenu(null);
   };
 
   const handleEditSpec = (spec: Specification) => {
     setEditingSpec(spec);
-    setSpecForm({
-      food_type_id: spec.food_type_id || '',
-      name: spec.name,
-    });
+    setSpecForm({ food_type_id: spec.food_type_id || '', name: spec.name });
     setSpecModalOpen(true);
     setOpenMenu(null);
   };
 
   const handleEditCookType = (cookType: CookType) => {
     setEditingCookType(cookType);
-    setCookTypeForm({
-      category_id: cookType.category_id || '',
-      name: cookType.name,
-    });
+    setCookTypeForm({ category_id: cookType.category_id || '', name: cookType.name });
     setCookTypeModalOpen(true);
     setOpenMenu(null);
   };
 
   const handleDeleteCategory = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this category? This action cannot be undone.')) {
-      return;
-    }
+    if (!confirm('Delete this category? This action cannot be undone.')) return;
     try {
       await settingsService.categories.delete(id);
-      loadAll();
-    } catch (error) {
-      console.error('Failed to delete category:', error);
-      alert('Failed to delete category. It may be in use by other items.');
+      loadAll(selectedLocationId);
+    } catch {
+      alert('Failed to delete category. It may be in use.');
     }
     setOpenMenu(null);
   };
 
   const handleDeleteType = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this food type? This action cannot be undone.')) {
-      return;
-    }
+    if (!confirm('Delete this food type? This action cannot be undone.')) return;
     try {
       await settingsService.types.delete(id);
-      loadAll();
-    } catch (error) {
-      console.error('Failed to delete food type:', error);
-      alert('Failed to delete food type. It may be in use by other items.');
+      loadAll(selectedLocationId);
+    } catch {
+      alert('Failed to delete food type. It may be in use.');
     }
     setOpenMenu(null);
   };
 
   const handleDeleteSpec = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this specification? This action cannot be undone.')) {
-      return;
-    }
+    if (!confirm('Delete this specification? This action cannot be undone.')) return;
     try {
       await settingsService.specifications.delete(id);
-      loadAll();
-    } catch (error) {
-      console.error('Failed to delete specification:', error);
-      alert('Failed to delete specification. It may be in use by other items.');
+      loadAll(selectedLocationId);
+    } catch {
+      alert('Failed to delete specification. It may be in use.');
     }
     setOpenMenu(null);
   };
 
   const handleDeleteCookType = async (id: string) => {
-    if (!confirm('Are you sure you want to delete this cook type? This action cannot be undone.')) {
-      return;
-    }
+    if (!confirm('Delete this cook type? This action cannot be undone.')) return;
     try {
       await settingsService.cookTypes.delete(id);
-      loadAll();
-    } catch (error) {
-      console.error('Failed to delete cook type:', error);
-      alert('Failed to delete cook type. It may be in use by other items.');
+      loadAll(selectedLocationId);
+    } catch {
+      alert('Failed to delete cook type. It may be in use.');
     }
     setOpenMenu(null);
   };
@@ -178,16 +175,19 @@ export default function SettingsPage() {
   const handleCreateCategory = async () => {
     try {
       if (editingCategory) {
-        await settingsService.categories.update(editingCategory.id, categoryForm);
+        await settingsService.categories.update(editingCategory.id, {
+          ...categoryForm,
+          location_id: selectedLocationId || undefined,
+        });
       } else {
-        await settingsService.categories.create(categoryForm);
+        await settingsService.categories.create({
+          ...categoryForm,
+          location_id: selectedLocationId || undefined,
+        });
       }
-      setCategoryModalOpen(false);
-      setEditingCategory(null);
-      setCategoryForm({ name: '', display_order: 0, show_specification: true, show_cook_type: true });
-      loadAll();
-    } catch (error) {
-      console.error('Failed to save category:', error);
+      resetCategoryModal();
+      loadAll(selectedLocationId);
+    } catch {
       alert('Failed to save category');
     }
   };
@@ -195,16 +195,19 @@ export default function SettingsPage() {
   const handleCreateType = async () => {
     try {
       if (editingType) {
-        await settingsService.types.update(editingType.id, typeForm);
+        await settingsService.types.update(editingType.id, {
+          ...typeForm,
+          location_id: selectedLocationId || undefined,
+        });
       } else {
-        await settingsService.types.create(typeForm);
+        await settingsService.types.create({
+          ...typeForm,
+          location_id: selectedLocationId || undefined,
+        });
       }
-      setTypeModalOpen(false);
-      setEditingType(null);
-      setTypeForm({ category_id: '', name: '' });
-      loadAll();
-    } catch (error) {
-      console.error('Failed to save food type:', error);
+      resetTypeModal();
+      loadAll(selectedLocationId);
+    } catch {
       alert('Failed to save food type');
     }
   };
@@ -212,16 +215,19 @@ export default function SettingsPage() {
   const handleCreateSpec = async () => {
     try {
       if (editingSpec) {
-        await settingsService.specifications.update(editingSpec.id, specForm);
+        await settingsService.specifications.update(editingSpec.id, {
+          ...specForm,
+          location_id: selectedLocationId || undefined,
+        });
       } else {
-        await settingsService.specifications.create(specForm);
+        await settingsService.specifications.create({
+          ...specForm,
+          location_id: selectedLocationId || undefined,
+        });
       }
-      setSpecModalOpen(false);
-      setEditingSpec(null);
-      setSpecForm({ food_type_id: '', name: '' });
-      loadAll();
-    } catch (error) {
-      console.error('Failed to save specification:', error);
+      resetSpecModal();
+      loadAll(selectedLocationId);
+    } catch {
       alert('Failed to save specification');
     }
   };
@@ -229,16 +235,19 @@ export default function SettingsPage() {
   const handleCreateCookType = async () => {
     try {
       if (editingCookType) {
-        await settingsService.cookTypes.update(editingCookType.id, cookTypeForm);
+        await settingsService.cookTypes.update(editingCookType.id, {
+          ...cookTypeForm,
+          location_id: selectedLocationId || undefined,
+        });
       } else {
-        await settingsService.cookTypes.create(cookTypeForm);
+        await settingsService.cookTypes.create({
+          ...cookTypeForm,
+          location_id: selectedLocationId || undefined,
+        });
       }
-      setCookTypeModalOpen(false);
-      setEditingCookType(null);
-      setCookTypeForm({ category_id: '', name: '' });
-      loadAll();
-    } catch (error) {
-      console.error('Failed to save cook type:', error);
+      resetCookTypeModal();
+      loadAll(selectedLocationId);
+    } catch {
       alert('Failed to save cook type');
     }
   };
@@ -267,7 +276,9 @@ export default function SettingsPage() {
     setCookTypeForm({ category_id: '', name: '' });
   };
 
-  if (loading) {
+  const currentLocation = locations.find(l => l.id === selectedLocationId);
+
+  if (loading && !selectedLocationId) {
     return (
       <div className="flex items-center justify-center h-64">
         <div className="flex flex-col items-center gap-3">
@@ -281,22 +292,58 @@ export default function SettingsPage() {
   return (
     <div className="space-y-6">
       {/* Modern Header */}
-      <div className="flex items-center gap-3">
-        <div className="p-3 bg-linear-to-br from-black to-black rounded-xl shadow-lg shadow-black/10">
-          <Settings className="w-6 h-6 text-white" />
-        </div>
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Settings</h1>
-
-          <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
-            Dashboard &gt; Settings &gt; List
-          </p>
+      <div className="flex items-center justify-between">
+        <div className="flex items-center gap-3">
+          <div className="p-3 bg-linear-to-br from-black to-black rounded-xl shadow-lg shadow-black/10">
+            <Settings className="w-6 h-6 text-white" />
+          </div>
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900 tracking-tight">Settings</h1>
+            <p className="text-sm text-gray-500 mt-1 flex items-center gap-1">
+              Dashboard &gt; Settings
+              {currentLocation && <><span>&gt;</span><span className="text-black font-medium">{currentLocation.name}</span></>}
+            </p>
+          </div>
         </div>
       </div>
 
+      {/* Location Selector */}
+      {locations.length > 0 && (
+        <div className="bg-white rounded-2xl shadow-lg border border-gray-100 p-4">
+          <div className="flex items-center gap-3">
+            <div className="p-2 bg-indigo-50 rounded-lg">
+              <MapPin className="w-5 h-5 text-indigo-600" />
+            </div>
+            <p className="text-sm font-semibold text-gray-700 shrink-0">Location</p>
+            <div className="flex flex-wrap gap-2 ml-2">
+              {locations.map((loc) => (
+                <button
+                  key={loc.id}
+                  onClick={() => setSelectedLocationId(loc.id)}
+                  className={`px-4 py-2 rounded-xl text-sm font-semibold border-2 transition-all duration-200 ${
+                    selectedLocationId === loc.id
+                      ? 'bg-black text-white border-black'
+                      : 'bg-gray-50 text-gray-700 border-gray-200 hover:border-gray-400'
+                  }`}
+                >
+                  {loc.name}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
+
+      {loading ? (
+        <div className="flex items-center justify-center h-40">
+          <div className="w-8 h-8 border-4 border-black border-t-transparent rounded-full animate-spin" />
+        </div>
+      ) : (
+        <>
+
       {/* Food Categories */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
-        <div className="px-6 py-4 bg-linear-to-r from-blue-50 to-indigo-50 border-b border-gray-100">
+        <div className="px-6 py-4 bg-linear-to-r from-blue-50 to-indigo-50 border-b border-gray-100 rounded-t-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-blue-500 rounded-lg">
@@ -308,10 +355,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <button
-              onClick={() => {
-                resetCategoryModal();
-                setCategoryModalOpen(true);
-              }}
+              onClick={() => { resetCategoryModal(); setCategoryModalOpen(true); }}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-linear-to-r from-blue-500 to-blue-600 text-white font-semibold rounded-xl shadow-md shadow-blue-500/30 hover:shadow-lg hover:shadow-blue-500/40 hover:from-blue-600 hover:to-blue-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
             >
               <Plus className="w-4 h-4" />
@@ -327,19 +371,20 @@ export default function SettingsPage() {
                   <UtensilsCrossed className="w-8 h-8 text-gray-400" />
                 </div>
                 <p className="text-gray-500 font-medium">No categories yet</p>
-                <p className="text-sm text-gray-400 mt-1">Add your first category to get started</p>
+                <p className="text-sm text-gray-400 mt-1">Add your first category for this location</p>
               </div>
             ) : (
               categories.map((cat) => (
                 <div
                   key={cat.id}
-                  className={`group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-blue-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${openMenu?.type === 'category' && openMenu?.id === cat.id ? 'z-30' : 'z-0'
-                    }`}
+                  className={`group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-blue-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${openMenu?.type === 'category' && openMenu?.id === cat.id ? 'z-30' : 'z-0'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 truncate">{cat.name}</h3>
-
+                      {cat.location_id && (
+                        <span className="text-xs text-indigo-500 font-medium">location</span>
+                      )}
                     </div>
                     <div className="relative ml-2">
                       <button
@@ -350,19 +395,11 @@ export default function SettingsPage() {
                       </button>
                       {openMenu?.type === 'category' && openMenu?.id === cat.id && (
                         <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-200 z-20 overflow-hidden">
-                          <button
-                            onClick={() => handleEditCategory(cat)}
-                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-blue-50 flex items-center gap-2 transition-colors"
-                          >
-                            <Pencil className="w-4 h-4" />
-                            Edit
+                          <button onClick={() => handleEditCategory(cat)} className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-blue-50 flex items-center gap-2 transition-colors">
+                            <Pencil className="w-4 h-4" /> Edit
                           </button>
-                          <button
-                            onClick={() => handleDeleteCategory(cat.id)}
-                            className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
+                          <button onClick={() => handleDeleteCategory(cat.id)} className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors">
+                            <Trash2 className="w-4 h-4" /> Delete
                           </button>
                         </div>
                       )}
@@ -377,7 +414,7 @@ export default function SettingsPage() {
 
       {/* Food Types */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
-        <div className="px-6 py-4 bg-linear-to-r from-green-50 to-emerald-50 border-b border-gray-100">
+        <div className="px-6 py-4 bg-linear-to-r from-green-50 to-emerald-50 border-b border-gray-100 rounded-t-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-green-500 rounded-lg">
@@ -389,10 +426,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <button
-              onClick={() => {
-                resetTypeModal();
-                setTypeModalOpen(true);
-              }}
+              onClick={() => { resetTypeModal(); setTypeModalOpen(true); }}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-linear-to-r from-green-500 to-green-600 text-white font-semibold rounded-xl shadow-md shadow-green-500/30 hover:shadow-lg hover:shadow-green-500/40 hover:from-green-600 hover:to-green-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
             >
               <Plus className="w-4 h-4" />
@@ -408,41 +442,31 @@ export default function SettingsPage() {
                   <Tag className="w-8 h-8 text-gray-400" />
                 </div>
                 <p className="text-gray-500 font-medium">No food types yet</p>
-                <p className="text-sm text-gray-400 mt-1">Add your first food type to get started</p>
+                <p className="text-sm text-gray-400 mt-1">Add food types for this location</p>
               </div>
             ) : (
               types.map((type) => (
                 <div
                   key={type.id}
-                  className={`group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-green-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${openMenu?.type === 'type' && openMenu?.id === type.id ? 'z-30' : 'z-0'
-                    }`}
+                  className={`group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-green-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${openMenu?.type === 'type' && openMenu?.id === type.id ? 'z-30' : 'z-0'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 truncate">{type.name}</h3>
+                      {type.category_name && <p className="text-xs text-gray-400 mt-0.5 truncate">{type.category_name}</p>}
+                      {type.location_id && <span className="text-xs text-indigo-500 font-medium">location</span>}
                     </div>
                     <div className="relative ml-2">
-                      <button
-                        onClick={(e) => handleMenuClick('type', type.id, e)}
-                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
-                      >
+                      <button onClick={(e) => handleMenuClick('type', type.id, e)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
                         <MoreVertical className="w-4 h-4" />
                       </button>
                       {openMenu?.type === 'type' && openMenu?.id === type.id && (
                         <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-200 z-20 overflow-hidden">
-                          <button
-                            onClick={() => handleEditType(type)}
-                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-green-50 flex items-center gap-2 transition-colors"
-                          >
-                            <Pencil className="w-4 h-4" />
-                            Edit
+                          <button onClick={() => handleEditType(type)} className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-green-50 flex items-center gap-2 transition-colors">
+                            <Pencil className="w-4 h-4" /> Edit
                           </button>
-                          <button
-                            onClick={() => handleDeleteType(type.id)}
-                            className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
+                          <button onClick={() => handleDeleteType(type.id)} className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors">
+                            <Trash2 className="w-4 h-4" /> Delete
                           </button>
                         </div>
                       )}
@@ -457,7 +481,7 @@ export default function SettingsPage() {
 
       {/* Specifications */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
-        <div className="px-6 py-4 bg-linear-to-r from-orange-50 to-amber-50 border-b border-gray-100">
+        <div className="px-6 py-4 bg-linear-to-r from-orange-50 to-amber-50 border-b border-gray-100 rounded-t-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-orange-500 rounded-lg">
@@ -469,10 +493,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <button
-              onClick={() => {
-                resetSpecModal();
-                setSpecModalOpen(true);
-              }}
+              onClick={() => { resetSpecModal(); setSpecModalOpen(true); }}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-linear-to-r from-orange-500 to-orange-600 text-white font-semibold rounded-xl shadow-md shadow-orange-500/30 hover:shadow-lg hover:shadow-orange-500/40 hover:from-orange-600 hover:to-orange-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
             >
               <Plus className="w-4 h-4" />
@@ -488,41 +509,31 @@ export default function SettingsPage() {
                   <Sparkles className="w-8 h-8 text-gray-400" />
                 </div>
                 <p className="text-gray-500 font-medium">No specifications yet</p>
-                <p className="text-sm text-gray-400 mt-1">Add your first specification to get started</p>
+                <p className="text-sm text-gray-400 mt-1">Add specifications for this location</p>
               </div>
             ) : (
               specifications.map((spec) => (
                 <div
                   key={spec.id}
-                  className={`group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-orange-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${openMenu?.type === 'spec' && openMenu?.id === spec.id ? 'z-30' : 'z-0'
-                    }`}
+                  className={`group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-orange-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${openMenu?.type === 'spec' && openMenu?.id === spec.id ? 'z-30' : 'z-0'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 truncate">{spec.name}</h3>
+                      {spec.food_type_name && <p className="text-xs text-gray-400 mt-0.5 truncate">{spec.food_type_name}</p>}
+                      {spec.location_id && <span className="text-xs text-indigo-500 font-medium">location</span>}
                     </div>
                     <div className="relative ml-2">
-                      <button
-                        onClick={(e) => handleMenuClick('spec', spec.id, e)}
-                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
-                      >
+                      <button onClick={(e) => handleMenuClick('spec', spec.id, e)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
                         <MoreVertical className="w-4 h-4" />
                       </button>
                       {openMenu?.type === 'spec' && openMenu?.id === spec.id && (
                         <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-200 z-20 overflow-hidden">
-                          <button
-                            onClick={() => handleEditSpec(spec)}
-                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-orange-50 flex items-center gap-2 transition-colors"
-                          >
-                            <Pencil className="w-4 h-4" />
-                            Edit
+                          <button onClick={() => handleEditSpec(spec)} className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-orange-50 flex items-center gap-2 transition-colors">
+                            <Pencil className="w-4 h-4" /> Edit
                           </button>
-                          <button
-                            onClick={() => handleDeleteSpec(spec.id)}
-                            className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
+                          <button onClick={() => handleDeleteSpec(spec.id)} className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors">
+                            <Trash2 className="w-4 h-4" /> Delete
                           </button>
                         </div>
                       )}
@@ -537,7 +548,7 @@ export default function SettingsPage() {
 
       {/* Cook Types */}
       <div className="bg-white rounded-2xl shadow-lg border border-gray-100">
-        <div className="px-6 py-4 bg-linear-to-r from-red-50 to-rose-50 border-b border-gray-100">
+        <div className="px-6 py-4 bg-linear-to-r from-red-50 to-rose-50 border-b border-gray-100 rounded-t-2xl">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="p-2 bg-red-500 rounded-lg">
@@ -549,10 +560,7 @@ export default function SettingsPage() {
               </div>
             </div>
             <button
-              onClick={() => {
-                resetCookTypeModal();
-                setCookTypeModalOpen(true);
-              }}
+              onClick={() => { resetCookTypeModal(); setCookTypeModalOpen(true); }}
               className="flex items-center justify-center gap-2 px-4 py-2.5 bg-linear-to-r from-red-500 to-red-600 text-white font-semibold rounded-xl shadow-md shadow-red-500/30 hover:shadow-lg hover:shadow-red-500/40 hover:from-red-600 hover:to-red-700 transition-all duration-200 transform hover:scale-105 active:scale-100"
             >
               <Plus className="w-4 h-4" />
@@ -568,41 +576,31 @@ export default function SettingsPage() {
                   <ChefHat className="w-8 h-8 text-gray-400" />
                 </div>
                 <p className="text-gray-500 font-medium">No cook types yet</p>
-                <p className="text-sm text-gray-400 mt-1">Add your first cook type to get started</p>
+                <p className="text-sm text-gray-400 mt-1">Add cook types for this location</p>
               </div>
             ) : (
               cookTypes.map((cook) => (
                 <div
                   key={cook.id}
-                  className={`group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-red-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${openMenu?.type === 'cookType' && openMenu?.id === cook.id ? 'z-30' : 'z-0'
-                    }`}
+                  className={`group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-red-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${openMenu?.type === 'cookType' && openMenu?.id === cook.id ? 'z-30' : 'z-0'}`}
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 truncate">{cook.name}</h3>
+                      {cook.category_name && <p className="text-xs text-gray-400 mt-0.5 truncate">{cook.category_name}</p>}
+                      {cook.location_id && <span className="text-xs text-indigo-500 font-medium">location</span>}
                     </div>
                     <div className="relative ml-2">
-                      <button
-                        onClick={(e) => handleMenuClick('cookType', cook.id, e)}
-                        className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200"
-                      >
+                      <button onClick={(e) => handleMenuClick('cookType', cook.id, e)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
                         <MoreVertical className="w-4 h-4" />
                       </button>
                       {openMenu?.type === 'cookType' && openMenu?.id === cook.id && (
                         <div className="absolute right-0 mt-2 w-40 bg-white rounded-xl shadow-xl border border-gray-200 z-20 overflow-hidden">
-                          <button
-                            onClick={() => handleEditCookType(cook)}
-                            className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                          >
-                            <Pencil className="w-4 h-4" />
-                            Edit
+                          <button onClick={() => handleEditCookType(cook)} className="w-full px-4 py-2.5 text-left text-sm text-gray-700 hover:bg-red-50 flex items-center gap-2 transition-colors">
+                            <Pencil className="w-4 h-4" /> Edit
                           </button>
-                          <button
-                            onClick={() => handleDeleteCookType(cook.id)}
-                            className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors"
-                          >
-                            <Trash2 className="w-4 h-4" />
-                            Delete
+                          <button onClick={() => handleDeleteCookType(cook.id)} className="w-full px-4 py-2.5 text-left text-sm text-red-600 hover:bg-red-50 flex items-center gap-2 transition-colors">
+                            <Trash2 className="w-4 h-4" /> Delete
                           </button>
                         </div>
                       )}
@@ -615,6 +613,9 @@ export default function SettingsPage() {
         </div>
       </div>
 
+        </>
+      )}
+
       {/* Category Modal */}
       <Modal
         isOpen={categoryModalOpen}
@@ -622,53 +623,40 @@ export default function SettingsPage() {
         title={editingCategory ? 'Edit Food Category' : 'Food Category'}
         footer={
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={resetCategoryModal}
-              className="px-6 py-2.5"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleCreateCategory}
-              className="px-6 py-2.5 bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md shadow-blue-500/30"
-            >
+            <Button variant="outline" onClick={resetCategoryModal} className="px-6 py-2.5">Cancel</Button>
+            <Button variant="primary" onClick={handleCreateCategory} className="px-6 py-2.5 bg-linear-to-r from-blue-500 to-blue-600 hover:from-blue-600 hover:to-blue-700 shadow-md shadow-blue-500/30">
               {editingCategory ? 'Update' : 'Add Category'}
             </Button>
           </div>
         }
       >
         <form onSubmit={(e) => { e.preventDefault(); handleCreateCategory(); }} className="space-y-5">
+          {currentLocation && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 rounded-lg">
+              <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
+              <p className="text-xs text-indigo-700 font-medium">Adding to: <strong>{currentLocation.name}</strong></p>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Category Name <span className="text-red-500">*</span></label>
             <input
-              type="text"
-              required
-              placeholder="Enter Food Category"
+              type="text" required placeholder="Enter Food Category"
               value={categoryForm.name}
               onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
             />
           </div>
-
           <div className="flex items-center gap-6">
             <label className="flex items-center gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={categoryForm.show_specification}
+              <input type="checkbox" checked={categoryForm.show_specification}
                 onChange={(e) => setCategoryForm({ ...categoryForm, show_specification: e.target.checked })}
-                className="w-5 h-5 rounded border-2 border-gray-300 text-blue-500 focus:ring-2 focus:ring-blue-500 cursor-pointer"
-              />
+                className="w-5 h-5 rounded border-2 border-gray-300 text-blue-500 focus:ring-2 focus:ring-blue-500 cursor-pointer" />
               <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Show Specification</span>
             </label>
             <label className="flex items-center gap-3 cursor-pointer group">
-              <input
-                type="checkbox"
-                checked={categoryForm.show_cook_type}
+              <input type="checkbox" checked={categoryForm.show_cook_type}
                 onChange={(e) => setCategoryForm({ ...categoryForm, show_cook_type: e.target.checked })}
-                className="w-5 h-5 rounded border-2 border-gray-300 text-blue-500 focus:ring-2 focus:ring-blue-500 cursor-pointer"
-              />
+                className="w-5 h-5 rounded border-2 border-gray-300 text-blue-500 focus:ring-2 focus:ring-blue-500 cursor-pointer" />
               <span className="text-sm font-medium text-gray-700 group-hover:text-gray-900">Show Cook Type</span>
             </label>
           </div>
@@ -682,46 +670,35 @@ export default function SettingsPage() {
         title={editingType ? 'Edit Food Type' : 'Food Type'}
         footer={
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={resetTypeModal}
-              className="px-6 py-2.5"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleCreateType}
-              className="px-6 py-2.5 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-md shadow-green-500/30"
-            >
+            <Button variant="outline" onClick={resetTypeModal} className="px-6 py-2.5">Cancel</Button>
+            <Button variant="primary" onClick={handleCreateType} className="px-6 py-2.5 bg-linear-to-r from-green-500 to-green-600 hover:from-green-600 hover:to-green-700 shadow-md shadow-green-500/30">
               {editingType ? 'Update' : 'Add Type'}
             </Button>
           </div>
         }
       >
         <form onSubmit={(e) => { e.preventDefault(); handleCreateType(); }} className="space-y-5">
+          {currentLocation && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 rounded-lg">
+              <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
+              <p className="text-xs text-indigo-700 font-medium">Adding to: <strong>{currentLocation.name}</strong></p>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Select Food Category <span className="text-red-500">*</span></label>
-            <select
-              required
-              value={typeForm.category_id}
+            <select required value={typeForm.category_id}
               onChange={(e) => setTypeForm({ ...typeForm, category_id: e.target.value })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white cursor-pointer"
             >
               <option value="">Select category</option>
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Enter Food Type <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              required
-              placeholder="Enter Food Type"
+            <input type="text" required placeholder="Enter Food Type"
               value={typeForm.name}
               onChange={(e) => setTypeForm({ ...typeForm, name: e.target.value })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
@@ -737,46 +714,35 @@ export default function SettingsPage() {
         title={editingSpec ? 'Edit Specification' : 'Specification'}
         footer={
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={resetSpecModal}
-              className="px-6 py-2.5"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleCreateSpec}
-              className="px-6 py-2.5 bg-linear-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-md shadow-orange-500/30"
-            >
+            <Button variant="outline" onClick={resetSpecModal} className="px-6 py-2.5">Cancel</Button>
+            <Button variant="primary" onClick={handleCreateSpec} className="px-6 py-2.5 bg-linear-to-r from-orange-500 to-orange-600 hover:from-orange-600 hover:to-orange-700 shadow-md shadow-orange-500/30">
               {editingSpec ? 'Update' : 'Add Specification'}
             </Button>
           </div>
         }
       >
         <form onSubmit={(e) => { e.preventDefault(); handleCreateSpec(); }} className="space-y-5">
+          {currentLocation && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 rounded-lg">
+              <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
+              <p className="text-xs text-indigo-700 font-medium">Adding to: <strong>{currentLocation.name}</strong></p>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Select Food Type <span className="text-red-500">*</span></label>
-            <select
-              required
-              value={specForm.food_type_id}
+            <select required value={specForm.food_type_id}
               onChange={(e) => setSpecForm({ ...specForm, food_type_id: e.target.value })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white cursor-pointer"
             >
               <option value="">Select food type</option>
               {types.map((type) => (
-                <option key={type.id} value={type.id}>
-                  {type.name}
-                </option>
+                <option key={type.id} value={type.id}>{type.name}</option>
               ))}
             </select>
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Enter Specification <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              required
-              placeholder="Enter Specification"
+            <input type="text" required placeholder="Enter Specification"
               value={specForm.name}
               onChange={(e) => setSpecForm({ ...specForm, name: e.target.value })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-orange-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
@@ -792,46 +758,35 @@ export default function SettingsPage() {
         title={editingCookType ? 'Edit Cook Type' : 'Cook Type'}
         footer={
           <div className="flex items-center gap-3">
-            <Button
-              variant="outline"
-              onClick={resetCookTypeModal}
-              className="px-6 py-2.5"
-            >
-              Cancel
-            </Button>
-            <Button
-              variant="primary"
-              onClick={handleCreateCookType}
-              className="px-6 py-2.5 bg-linear-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-md shadow-red-500/30"
-            >
+            <Button variant="outline" onClick={resetCookTypeModal} className="px-6 py-2.5">Cancel</Button>
+            <Button variant="primary" onClick={handleCreateCookType} className="px-6 py-2.5 bg-linear-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-md shadow-red-500/30">
               {editingCookType ? 'Update' : 'Add Cook Type'}
             </Button>
           </div>
         }
       >
         <form onSubmit={(e) => { e.preventDefault(); handleCreateCookType(); }} className="space-y-5">
+          {currentLocation && (
+            <div className="flex items-center gap-2 px-3 py-2 bg-indigo-50 rounded-lg">
+              <MapPin className="w-4 h-4 text-indigo-500 shrink-0" />
+              <p className="text-xs text-indigo-700 font-medium">Adding to: <strong>{currentLocation.name}</strong></p>
+            </div>
+          )}
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Select Category <span className="text-red-500">*</span></label>
-            <select
-              required
-              value={cookTypeForm.category_id}
+            <select required value={cookTypeForm.category_id}
               onChange={(e) => setCookTypeForm({ ...cookTypeForm, category_id: e.target.value })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white cursor-pointer"
             >
               <option value="">Select category</option>
               {categories.map((cat) => (
-                <option key={cat.id} value={cat.id}>
-                  {cat.name}
-                </option>
+                <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
             </select>
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Enter Cook Type <span className="text-red-500">*</span></label>
-            <input
-              type="text"
-              required
-              placeholder="Enter Cook Type"
+            <input type="text" required placeholder="Enter Cook Type"
               value={cookTypeForm.name}
               onChange={(e) => setCookTypeForm({ ...cookTypeForm, name: e.target.value })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
@@ -839,6 +794,6 @@ export default function SettingsPage() {
           </div>
         </form>
       </Modal>
-    </div >
+    </div>
   );
 }
