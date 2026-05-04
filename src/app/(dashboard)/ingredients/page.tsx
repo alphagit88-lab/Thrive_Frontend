@@ -486,10 +486,11 @@ export default function IngredientsPage() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-3">
+            <div className="flex items-center justify-between mb-1.5">
               <label className="text-xs font-semibold text-gray-700">Nutrition Values</label>
-              <span className="text-[11px] text-gray-400">Optional per ingredient</span>
+              <span className="text-[11px] text-gray-400">Optional, values per 100g</span>
             </div>
+            <p className="mb-3 text-[11px] text-gray-500">Enter the nutrition included in 100g of this ingredient.</p>
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {nutritionFieldConfig.map((field) => (
                 <div key={field.key}>
