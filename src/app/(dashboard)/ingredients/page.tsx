@@ -3,25 +3,89 @@
 import { useEffect, useState, useRef } from 'react';
 import { ingredientsService } from '@/services/ingredients.service';
 import { settingsService } from '@/services/settings.service';
-import { Ingredient, FoodCategory, FoodType, Specification, CookType } from '@/types';
+import { Ingredient, IngredientForm, FoodCategory, FoodType, Specification, CookType } from '@/types';
 import Tabs from '@/components/Tabs';
 import { Plus, MoreVertical, Pencil, Trash2, Save, Apple, Package } from 'lucide-react';
 
-interface IngredientFormLocal {
-  location_id: string;
-  food_type_id: string;
-  specification_ids: string[];
-  cook_type_ids: string[];
+type NutritionField = 'protein' | 'carbs' | 'fats' | 'kcal';
+
+interface IngredientFormLocal extends Omit<IngredientForm, NutritionField> {
   name: string;
   description: string;
+  protein: string;
+  carbs: string;
+  fats: string;
+  kcal: string;
   photos: string[];
-  quantities: {
-    quantity_value: string;
-    quantity_grams?: number;
-    price: number;
-    is_available: boolean;
-  }[];
 }
+
+const nutritionFieldConfig: Array<{ key: NutritionField; label: string; unit: string }> = [
+  { key: 'protein', label: 'Protein', unit: 'g' },
+  { key: 'carbs', label: 'Carbs', unit: 'g' },
+  { key: 'fats', label: 'Fats', unit: 'g' },
+  { key: 'kcal', label: 'Kcal', unit: 'kcal' },
+];
+
+const createDefaultQuantities = (): IngredientFormLocal['quantities'] => [
+  { quantity_value: '100g', quantity_grams: 100, price: 0, is_available: true },
+  { quantity_value: '200g', quantity_grams: 200, price: 0, is_available: true },
+  { quantity_value: '300g', quantity_grams: 300, price: 0, is_available: true },
+  { quantity_value: '400g', quantity_grams: 400, price: 0, is_available: true },
+];
+
+const createEmptyIngredientForm = (locationId = ''): IngredientFormLocal => ({
+  location_id: locationId,
+  food_type_id: '',
+  specification_ids: [],
+  cook_type_ids: [],
+  name: '',
+  description: '',
+  protein: '',
+  carbs: '',
+  fats: '',
+  kcal: '',
+  photos: [],
+  quantities: createDefaultQuantities(),
+});
+
+const formatNutritionInputValue = (value?: number | null) => {
+  if (value === null || value === undefined) {
+    return '';
+  }
+
+  return String(value);
+};
+
+const parseNutritionInputValue = (value: string) => {
+  const normalizedValue = value.trim();
+
+  if (!normalizedValue) {
+    return null;
+  }
+
+  const numericValue = Number(normalizedValue);
+  return Number.isFinite(numericValue) ? numericValue : null;
+};
+
+const buildIngredientPayload = (data: IngredientFormLocal): IngredientForm => {
+  const { protein, carbs, fats, kcal, ...ingredientData } = data;
+
+  return {
+    ...ingredientData,
+    protein: parseNutritionInputValue(protein),
+    carbs: parseNutritionInputValue(carbs),
+    fats: parseNutritionInputValue(fats),
+    kcal: parseNutritionInputValue(kcal),
+  };
+};
+
+const getNutritionItems = (ingredient: Pick<Ingredient, NutritionField>) =>
+  nutritionFieldConfig
+    .map((field) => ({
+      ...field,
+      value: ingredient[field.key],
+    }))
+    .filter((field) => field.value !== null && field.value !== undefined);
 
 export default function IngredientsPage() {
   const [categories, setCategories] = useState<FoodCategory[]>([]);
@@ -37,21 +101,7 @@ export default function IngredientsPage() {
   
   const [locationId, setLocationId] = useState<string>('');
 
-  const [formData, setFormData] = useState<IngredientFormLocal>({
-    location_id: '',
-    food_type_id: '',
-    specification_ids: [],
-    cook_type_ids: [],
-    name: '',
-    description: '',
-    photos: [],
-    quantities: [
-      { quantity_value: '100g', quantity_grams: 100, price: 0, is_available: true },
-      { quantity_value: '200g', quantity_grams: 200, price: 0, is_available: true },
-      { quantity_value: '300g', quantity_grams: 300, price: 0, is_available: true },
-      { quantity_value: '400g', quantity_grams: 400, price: 0, is_available: true },
-    ],
-  });
+  const [formData, setFormData] = useState<IngredientFormLocal>(createEmptyIngredientForm());
 
   useEffect(() => {
     const savedLocationId = localStorage.getItem('locationId');
@@ -162,14 +212,6 @@ export default function IngredientsPage() {
     }
   };
 
-  const handleAddPhoto = (url: string) => {
-    if (!url) return;
-    setFormData(prev => ({
-      ...prev,
-      photos: [...prev.photos, url]
-    }));
-  };
-
   const handleRemovePhoto = (index: number) => {
     setFormData(prev => {
       const newPhotos = [...prev.photos];
@@ -226,12 +268,16 @@ export default function IngredientsPage() {
   const handleEdit = (ingredient: Ingredient) => {
     setEditingIngredient(ingredient);
     setFormData({
-      location_id: ingredient.location_id || locationId,
+      ...createEmptyIngredientForm(ingredient.location_id || locationId),
       food_type_id: ingredient.food_type_id,
       specification_ids: ingredient.specification_ids || [],
       cook_type_ids: ingredient.cook_type_ids || [],
       name: ingredient.name || '',
       description: ingredient.description || '',
+      protein: formatNutritionInputValue(ingredient.protein),
+      carbs: formatNutritionInputValue(ingredient.carbs),
+      fats: formatNutritionInputValue(ingredient.fats),
+      kcal: formatNutritionInputValue(ingredient.kcal),
       photos: ingredient.photos?.map(p => typeof p === 'string' ? p : p.photo_url) || [],
       quantities: ingredient.quantities && ingredient.quantities.length > 0
         ? ingredient.quantities.map(qty => ({
@@ -240,12 +286,7 @@ export default function IngredientsPage() {
             price: qty.price,
             is_available: qty.is_available,
           }))
-        : [
-            { quantity_value: '100g', quantity_grams: 100, price: 0, is_available: true },
-            { quantity_value: '200g', quantity_grams: 200, price: 0, is_available: true },
-            { quantity_value: '300g', quantity_grams: 300, price: 0, is_available: true },
-            { quantity_value: '400g', quantity_grams: 400, price: 0, is_available: true },
-          ],
+        : createDefaultQuantities(),
     });
     setOpenMenu(null);
   };
@@ -265,20 +306,14 @@ export default function IngredientsPage() {
 
   const handleAddNew = () => {
     setEditingIngredient(null);
-    setFormData({
-      location_id: locationId,
-      food_type_id: '',
-      specification_ids: [],
-      cook_type_ids: [],
-      name: '',
-      description: '',
-      photos: [],
-      quantities: [
-        { quantity_value: '100g', quantity_grams: 100, price: 0, is_available: true },
-        { quantity_value: '200g', quantity_grams: 200, price: 0, is_available: true },
-        { quantity_value: '300g', quantity_grams: 300, price: 0, is_available: true },
-        { quantity_value: '400g', quantity_grams: 400, price: 0, is_available: true },
-      ],
+    setFormData(createEmptyIngredientForm(locationId));
+  };
+
+  const handleNutritionChange = (field: NutritionField, value: string) => {
+    setFormData((prev) => {
+      const next = { ...prev };
+      next[field] = value;
+      return next;
     });
   };
 
@@ -294,17 +329,15 @@ export default function IngredientsPage() {
       }
 
       const validQuantities = formData.quantities.filter(qty => qty.is_available && qty.quantity_value);
+      const payload = buildIngredientPayload({
+        ...formData,
+        quantities: validQuantities,
+      });
 
       if (editingIngredient) {
-        await ingredientsService.update(editingIngredient.id, {
-          ...formData,
-          quantities: validQuantities,
-        });
+        await ingredientsService.update(editingIngredient.id, payload);
       } else {
-        await ingredientsService.create({
-          ...formData,
-          quantities: validQuantities,
-        });
+        await ingredientsService.create(payload);
       }
 
       handleAddNew();
@@ -345,6 +378,7 @@ export default function IngredientsPage() {
       return false;
     }
   );
+  const canSubmitIngredient = Boolean(formData.name.trim() && formData.food_type_id);
 
   return (
     <div>
@@ -436,6 +470,51 @@ export default function IngredientsPage() {
         </div>
 
         <div className="p-6 space-y-5">
+          <div>
+            <label className="text-xs font-semibold text-gray-700 block mb-2">
+              Ingredient Name
+            </label>
+            <input
+              type="text"
+              value={formData.name}
+              onChange={(e) => {
+                setFormData({ ...formData, name: e.target.value });
+              }}
+              className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
+              placeholder="Enter ingredient name"
+            />
+          </div>
+
+          <div>
+            <div className="flex items-center justify-between mb-3">
+              <label className="text-xs font-semibold text-gray-700">Nutrition Values</label>
+              <span className="text-[11px] text-gray-400">Optional per ingredient</span>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
+              {nutritionFieldConfig.map((field) => (
+                <div key={field.key}>
+                  <label className="text-xs font-semibold text-gray-700 block mb-2">
+                    {field.label}
+                  </label>
+                  <div className="relative">
+                    <input
+                      type="number"
+                      min="0"
+                      step="0.01"
+                      value={formData[field.key]}
+                      onChange={(e) => handleNutritionChange(field.key, e.target.value)}
+                      className="w-full px-4 py-2.5 pr-16 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
+                      placeholder="0.00"
+                    />
+                    <span className="absolute inset-y-0 right-4 flex items-center text-xs font-semibold text-gray-400 uppercase">
+                      {field.unit}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </div>
+
           {/* Category Type Dropdown */}
           <div>
             <label className="text-xs font-semibold text-gray-700 block mb-2">
@@ -629,7 +708,12 @@ export default function IngredientsPage() {
           <div className="flex justify-end pt-4 border-t border-gray-100">
             <button
               onClick={handleSubmit}
-              className="flex items-center justify-center gap-2.5 px-8 py-3.5 bg-linear-to-r from-black to-black text-white font-semibold rounded-xl shadow-lg  hover:shadow-xl hover:shadow-black hover:from-black hover:to-black transition-all duration-300 transform hover:scale-105 active:scale-100"
+              disabled={!canSubmitIngredient}
+              className={`flex items-center justify-center gap-2.5 px-8 py-3.5 text-white font-semibold rounded-xl shadow-lg transition-all duration-300 transform active:scale-100 ${
+                canSubmitIngredient
+                  ? 'bg-linear-to-r from-black to-black hover:shadow-xl hover:shadow-black hover:from-black hover:to-black hover:scale-105'
+                  : 'bg-gray-300 cursor-not-allowed shadow-none'
+              }`}
             >
               <Save className="w-5 h-5" />
               <span>Save Ingredient</span>
@@ -649,7 +733,10 @@ export default function IngredientsPage() {
             </span>
           </div>
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categoryIngredients.map((ing) => (
+            {categoryIngredients.map((ing) => {
+              const nutritionItems = getNutritionItems(ing);
+
+              return (
               <div key={ing.id} className="bg-white rounded-xl shadow-lg border border-gray-100 p-5 relative hover:shadow-xl transition-all duration-300">
                 {/* 3-dots Menu */}
                 <div className="absolute top-4 right-4">
@@ -691,6 +778,18 @@ export default function IngredientsPage() {
                       </div>
                       <h3 className="font-bold text-base text-gray-900 truncate">{ing.name || ing.food_type_name}</h3>
                     </div>
+                  {nutritionItems.length > 0 && (
+                    <div className="grid grid-cols-2 gap-2 mb-3">
+                      {nutritionItems.map((item) => (
+                        <div key={`${ing.id}-${item.key}`} className="px-3 py-2 bg-emerald-50 rounded-lg border border-emerald-100">
+                          <p className="text-[11px] font-semibold uppercase tracking-wide text-emerald-700">{item.label}</p>
+                          <p className="text-sm font-bold text-emerald-900">
+                            {item.value} {item.unit}
+                          </p>
+                        </div>
+                      ))}
+                    </div>
+                  )}
                   {/* Multiple specifications */}
                   {ing.specification_names && ing.specification_names.length > 0 && (
                     <div className="flex flex-wrap gap-1.5 mb-2">
@@ -727,7 +826,8 @@ export default function IngredientsPage() {
                   </div>
                 </div>
               </div>
-            ))}
+            );
+            })}
           </div>
         </div>
       )}

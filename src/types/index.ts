@@ -88,6 +88,10 @@ export interface Ingredient {
   cook_type_ids?: string[];
   name?: string;
   description?: string;
+  protein?: number | null;
+  carbs?: number | null;
+  fats?: number | null;
+  kcal?: number | null;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -249,6 +253,10 @@ export interface IngredientForm {
   cook_type_ids: string[];
   name?: string;
   description?: string;
+  protein?: number | null;
+  carbs?: number | null;
+  fats?: number | null;
+  kcal?: number | null;
   quantities: {
     quantity_value: string;
     quantity_grams?: number;
