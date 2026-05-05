@@ -176,7 +176,7 @@ export interface Order {
   location_id: string;
   customer_id?: string;
   order_number?: string;
-  status: 'received' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  status: 'received' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
   total_price: number;
   notes?: string;
   order_date: string;
