@@ -3,7 +3,7 @@
  */
 
 import apiClient from '@/lib/api';
-import { Ingredient, IngredientForm, ApiResponse } from '@/types';
+import { Ingredient, IngredientForm, IngredientNutritionLookup, ApiResponse } from '@/types';
 
 export const ingredientsService = {
   // GET /api/ingredients
@@ -13,14 +13,22 @@ export const ingredientsService = {
   },
 
   // GET /api/ingredients/by-category
-  getByCategory: async (location_id?: string): Promise<ApiResponse<any[]>> => {
-    const response = await apiClient.get<ApiResponse<any[]>>('/ingredients/by-category', { params: { location_id } });
+  getByCategory: async (location_id?: string): Promise<ApiResponse<Record<string, unknown>[]>> => {
+    const response = await apiClient.get<ApiResponse<Record<string, unknown>[]>>('/ingredients/by-category', { params: { location_id } });
     return response.data;
   },
 
   // GET /api/ingredients/:id
   getById: async (id: string): Promise<ApiResponse<Ingredient>> => {
     const response = await apiClient.get<ApiResponse<Ingredient>>(`/ingredients/${id}`);
+    return response.data;
+  },
+
+  // GET /api/ingredients/nutrition/lookup
+  lookupNutrition: async (query: string): Promise<ApiResponse<IngredientNutritionLookup>> => {
+    const response = await apiClient.get<ApiResponse<IngredientNutritionLookup>>('/ingredients/nutrition/lookup', {
+      params: { query },
+    });
     return response.data;
   },
 

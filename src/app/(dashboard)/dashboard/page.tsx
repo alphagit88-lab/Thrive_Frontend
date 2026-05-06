@@ -62,7 +62,7 @@ export default function DashboardPage() {
       label: 'Status',
       render: (value: unknown) => {
         const status = value as string;
-        return <Badge status={status as 'received' | 'preparing' | 'ready' | 'delivered' | 'cancelled' | 'active' | 'inactive' | 'draft' | 'suspended'}>{status}</Badge>;
+        return <Badge status={status as 'received' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'cancelled' | 'active' | 'inactive' | 'draft' | 'suspended'}>{status}</Badge>;
       },
     },
   ];

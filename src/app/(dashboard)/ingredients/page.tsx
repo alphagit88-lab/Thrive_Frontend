@@ -3,9 +3,9 @@
 import { useEffect, useState, useRef } from 'react';
 import { ingredientsService } from '@/services/ingredients.service';
 import { settingsService } from '@/services/settings.service';
-import { Ingredient, IngredientForm, FoodCategory, FoodType, Specification, CookType } from '@/types';
+import { Ingredient, IngredientForm, IngredientNutritionLookup, FoodCategory, FoodType, Specification, CookType } from '@/types';
 import Tabs from '@/components/Tabs';
-import { Plus, MoreVertical, Pencil, Trash2, Save, Apple, Package } from 'lucide-react';
+import { Plus, MoreVertical, Pencil, Trash2, Save, Apple, Package, Loader2, Search } from 'lucide-react';
 
 type NutritionField = 'protein' | 'carbs' | 'fats' | 'kcal';
 
@@ -18,6 +18,36 @@ interface IngredientFormLocal extends Omit<IngredientForm, NutritionField> {
   kcal: string;
   photos: string[];
 }
+
+type NutritionLookupStatus = {
+  tone: 'success' | 'warning' | 'error';
+  text: string;
+};
+
+const getLookupErrorMessage = (error: unknown) => {
+  if (
+    typeof error === 'object' &&
+    error !== null &&
+    'response' in error &&
+    typeof error.response === 'object' &&
+    error.response !== null &&
+    'data' in error.response &&
+    typeof error.response.data === 'object' &&
+    error.response.data !== null
+  ) {
+    const data = error.response.data as { error?: unknown; message?: unknown };
+
+    if (typeof data.error === 'string' && data.error.trim()) {
+      return data.error.trim();
+    }
+
+    if (typeof data.message === 'string' && data.message.trim()) {
+      return data.message.trim();
+    }
+  }
+
+  return 'Failed to fetch nutrition from CalorieNinjas. Please try again.';
+};
 
 const nutritionFieldConfig: Array<{ key: NutritionField; label: string; unit: string }> = [
   { key: 'protein', label: 'Protein', unit: 'g' },
@@ -79,6 +109,20 @@ const buildIngredientPayload = (data: IngredientFormLocal): IngredientForm => {
   };
 };
 
+const hasAnyNutritionValue = (data: Pick<IngredientFormLocal, NutritionField>) =>
+  nutritionFieldConfig.some((field) => data[field.key].trim() !== '');
+
+const applyNutritionLookupToForm = (
+  data: IngredientFormLocal,
+  nutrition: IngredientNutritionLookup
+): IngredientFormLocal => ({
+  ...data,
+  protein: formatNutritionInputValue(nutrition.protein),
+  carbs: formatNutritionInputValue(nutrition.carbs),
+  fats: formatNutritionInputValue(nutrition.fats),
+  kcal: formatNutritionInputValue(nutrition.kcal),
+});
+
 const getNutritionItems = (ingredient: Pick<Ingredient, NutritionField>) =>
   nutritionFieldConfig
     .map((field) => ({
@@ -97,6 +141,9 @@ export default function IngredientsPage() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   const [isUploading, setIsUploading] = useState(false);
+  const [isLookingUpNutrition, setIsLookingUpNutrition] = useState(false);
+  const [nutritionLookupStatus, setNutritionLookupStatus] = useState<NutritionLookupStatus | null>(null);
+  const [nutritionResolvedForName, setNutritionResolvedForName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   const [locationId, setLocationId] = useState<string>('');
@@ -267,6 +314,8 @@ export default function IngredientsPage() {
 
   const handleEdit = (ingredient: Ingredient) => {
     setEditingIngredient(ingredient);
+    setNutritionLookupStatus(null);
+    setNutritionResolvedForName((ingredient.name || '').trim().toLowerCase());
     setFormData({
       ...createEmptyIngredientForm(ingredient.location_id || locationId),
       food_type_id: ingredient.food_type_id,
@@ -306,15 +355,72 @@ export default function IngredientsPage() {
 
   const handleAddNew = () => {
     setEditingIngredient(null);
+    setNutritionLookupStatus(null);
+    setNutritionResolvedForName('');
     setFormData(createEmptyIngredientForm(locationId));
   };
 
-  const handleNutritionChange = (field: NutritionField, value: string) => {
-    setFormData((prev) => {
-      const next = { ...prev };
-      next[field] = value;
-      return next;
-    });
+  const fetchNutritionForForm = async (
+    sourceData: IngredientFormLocal,
+    { requireResult = false, persist = true }: { requireResult?: boolean; persist?: boolean } = {}
+  ) => {
+    const query = sourceData.name.trim();
+
+    if (!query) {
+      const message = 'Enter an ingredient name before fetching nutrition.';
+      setNutritionLookupStatus({ tone: 'warning', text: message });
+      if (requireResult) {
+        alert(message);
+      }
+      return null;
+    }
+
+    try {
+      setIsLookingUpNutrition(true);
+      setNutritionLookupStatus(null);
+
+      const response = await ingredientsService.lookupNutrition(query);
+      const nutrition = response.data;
+
+      if (!response.success || !nutrition) {
+        throw new Error('Missing nutrition lookup data');
+      }
+
+      if (nutrition.item_count === 0) {
+        const message = 'No CalorieNinjas match was found for this ingredient name.';
+        setNutritionLookupStatus({ tone: 'warning', text: message });
+        if (requireResult) {
+          alert(message);
+        }
+        return null;
+      }
+
+      const nextFormData = applyNutritionLookupToForm(sourceData, nutrition);
+      if (persist) {
+        setFormData(nextFormData);
+      }
+
+      setNutritionResolvedForName(query.toLowerCase());
+
+      setNutritionLookupStatus({
+        tone: 'success',
+        text: nutrition.item_count > 1
+          ? `Auto-filled from ${nutrition.item_count} CalorieNinjas matches. Combined values were applied.`
+          : `Auto-filled from CalorieNinjas: ${nutrition.matched_name || query}.`,
+      });
+
+      return nextFormData;
+    } catch (error) {
+      console.error('Failed to fetch ingredient nutrition:', error);
+      const message = getLookupErrorMessage(error);
+      setNutritionLookupStatus({ tone: 'error', text: message });
+      if (requireResult) {
+        alert(message);
+      }
+      return null;
+    } finally {
+      setIsLookingUpNutrition(false);
+    }
   };
 
   const handleSubmit = async () => {
@@ -328,10 +434,30 @@ export default function IngredientsPage() {
         return;
       }
 
-      const validQuantities = formData.quantities.filter(qty => qty.is_available && qty.quantity_value);
+      let draftFormData = { ...formData };
+      const normalizedIngredientName = draftFormData.name.trim().toLowerCase();
+
+      if (!normalizedIngredientName) {
+        alert('Please enter an ingredient name');
+        return;
+      }
+
+      if (!hasAnyNutritionValue(draftFormData) || nutritionResolvedForName !== normalizedIngredientName) {
+        const enrichedFormData = await fetchNutritionForForm(draftFormData, {
+          requireResult: true,
+          persist: true,
+        });
+
+        if (!enrichedFormData) {
+          return;
+        }
+
+        draftFormData = enrichedFormData;
+      }
+
       const payload = buildIngredientPayload({
-        ...formData,
-        quantities: validQuantities,
+        ...draftFormData,
+        quantities: draftFormData.quantities.filter(qty => qty.is_available && qty.quantity_value),
       });
 
       if (editingIngredient) {
@@ -379,6 +505,7 @@ export default function IngredientsPage() {
     }
   );
   const canSubmitIngredient = Boolean(formData.name.trim() && formData.food_type_id);
+  const hasFetchedNutrition = hasAnyNutritionValue(formData);
 
   return (
     <div>
@@ -478,7 +605,31 @@ export default function IngredientsPage() {
               type="text"
               value={formData.name}
               onChange={(e) => {
-                setFormData({ ...formData, name: e.target.value });
+                const nextName = e.target.value;
+                const hasNameChanged = nextName.trim().toLowerCase() !== formData.name.trim().toLowerCase();
+
+                setNutritionLookupStatus(null);
+                setFormData({
+                  ...formData,
+                  name: nextName,
+                  ...(hasNameChanged
+                    ? {
+                        protein: '',
+                        carbs: '',
+                        fats: '',
+                        kcal: '',
+                      }
+                    : {}),
+                });
+
+                if (hasNameChanged) {
+                  setNutritionResolvedForName('');
+                }
+              }}
+              onBlur={() => {
+                if (formData.name.trim() && nutritionResolvedForName !== formData.name.trim().toLowerCase()) {
+                  void fetchNutritionForForm(formData);
+                }
               }}
               className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
               placeholder="Enter ingredient name"
@@ -486,28 +637,54 @@ export default function IngredientsPage() {
           </div>
 
           <div>
-            <div className="flex items-center justify-between mb-1.5">
+            <div className="flex flex-col gap-3 mb-1.5 sm:flex-row sm:items-center sm:justify-between">
               <label className="text-xs font-semibold text-gray-700">Nutrition Values</label>
-              <span className="text-[11px] text-gray-400">Optional, values per 100g</span>
+              <div className="flex items-center gap-3">
+                <span className="text-[11px] text-gray-400">Saved per 100g</span>
+                <button
+                  type="button"
+                  onClick={() => void fetchNutritionForForm(formData)}
+                  disabled={isLookingUpNutrition || !formData.name.trim()}
+                  className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
+                    isLookingUpNutrition || !formData.name.trim()
+                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
+                      : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
+                  }`}
+                >
+                  {isLookingUpNutrition ? (
+                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                  ) : (
+                    <Search className="w-3.5 h-3.5" />
+                  )}
+                  <span>{isLookingUpNutrition ? 'Fetching...' : 'Auto-fill from API'}</span>
+                </button>
+              </div>
             </div>
-            <p className="mb-3 text-[11px] text-gray-500">Enter the nutrition included in 100g of this ingredient.</p>
+            <p className="mb-3 text-[11px] text-gray-500">Macros are pulled from CalorieNinjas using the ingredient name and saved per 100g.</p>
+            {nutritionLookupStatus && (
+              <div
+                className={`mb-3 rounded-xl border px-4 py-3 text-xs font-medium ${
+                  nutritionLookupStatus.tone === 'success'
+                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
+                    : nutritionLookupStatus.tone === 'warning'
+                      ? 'border-amber-200 bg-amber-50 text-amber-700'
+                      : 'border-red-200 bg-red-50 text-red-700'
+                }`}
+              >
+                {nutritionLookupStatus.text}
+              </div>
+            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {nutritionFieldConfig.map((field) => (
-                <div key={field.key}>
+                <div key={field.key} className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
                   <label className="text-xs font-semibold text-gray-700 block mb-2">
                     {field.label}
                   </label>
-                  <div className="relative">
-                    <input
-                      type="number"
-                      min="0"
-                      step="0.01"
-                      value={formData[field.key]}
-                      onChange={(e) => handleNutritionChange(field.key, e.target.value)}
-                      className="w-full px-4 py-2.5 pr-16 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
-                      placeholder="0.00"
-                    />
-                    <span className="absolute inset-y-0 right-4 flex items-center text-xs font-semibold text-gray-400 uppercase">
+                  <div className="flex items-end justify-between gap-3">
+                    <span className={`text-2xl font-bold ${hasFetchedNutrition ? 'text-gray-900' : 'text-gray-300'}`}>
+                      {formData[field.key] || '--'}
+                    </span>
+                    <span className="text-xs font-semibold text-gray-400 uppercase">
                       {field.unit}
                     </span>
                   </div>

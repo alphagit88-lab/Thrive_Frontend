@@ -104,6 +104,28 @@ export interface Ingredient {
   photos?: IngredientPhoto[];
 }
 
+export interface IngredientNutritionLookupItem {
+  name: string | null;
+  serving_size_g: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fats: number | null;
+  kcal: number | null;
+}
+
+export interface IngredientNutritionLookup {
+  source: string;
+  query: string;
+  item_count: number;
+  matched_name: string | null;
+  serving_size_g: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fats: number | null;
+  kcal: number | null;
+  items: IngredientNutritionLookupItem[];
+}
+
 // Menu Item Photo
 export interface MenuItemPhoto {
   id: string;
@@ -176,7 +198,7 @@ export interface Order {
   location_id: string;
   customer_id?: string;
   order_number?: string;
-  status: 'received' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
+  status: 'received' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'cancelled';
   total_price: number;
   notes?: string;
   order_date: string;

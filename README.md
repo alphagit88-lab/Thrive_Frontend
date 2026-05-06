@@ -60,7 +60,7 @@ bun install
 Create a `.env.local` file in the root directory:
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=http://localhost:3001
+NEXT_PUBLIC_API_URL=http://localhost:3001/api
 NEXT_PUBLIC_APP_ENV=development
 ```
 
@@ -180,7 +180,7 @@ npm run start
 For production deployment, ensure the following environment variables are set:
 
 ```env
-NEXT_PUBLIC_API_BASE_URL=https://your-backend-api.com
+NEXT_PUBLIC_API_URL=https://your-backend-api.com/api
 NEXT_PUBLIC_APP_ENV=production
 ```
 

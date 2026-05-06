@@ -251,7 +251,7 @@ export default function OrdersPage() {
       render: (value: unknown) => {
         const status = value as string;
         return (
-          <Badge status={status as 'received' | 'preparing' | 'ready' | 'delivered' | 'cancelled'}>
+          <Badge status={status as 'received' | 'accepted' | 'preparing' | 'ready' | 'delivered' | 'cancelled'}>
             {status}
           </Badge>
         );
