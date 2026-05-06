@@ -5,7 +5,7 @@ import { ingredientsService } from '@/services/ingredients.service';
 import { settingsService } from '@/services/settings.service';
 import { Ingredient, IngredientForm, IngredientNutritionLookup, FoodCategory, FoodType, Specification, CookType } from '@/types';
 import Tabs from '@/components/Tabs';
-import { Plus, MoreVertical, Pencil, Trash2, Save, Apple, Package, Loader2, Search } from 'lucide-react';
+import { Plus, MoreVertical, Pencil, Trash2, Save, Apple, Package } from 'lucide-react';
 
 type NutritionField = 'protein' | 'carbs' | 'fats' | 'kcal';
 
@@ -18,11 +18,6 @@ interface IngredientFormLocal extends Omit<IngredientForm, NutritionField> {
   kcal: string;
   photos: string[];
 }
-
-type NutritionLookupStatus = {
-  tone: 'success' | 'warning' | 'error';
-  text: string;
-};
 
 const getLookupErrorMessage = (error: unknown) => {
   if (
@@ -141,8 +136,6 @@ export default function IngredientsPage() {
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const [isLookingUpNutrition, setIsLookingUpNutrition] = useState(false);
-  const [nutritionLookupStatus, setNutritionLookupStatus] = useState<NutritionLookupStatus | null>(null);
   const [nutritionResolvedForName, setNutritionResolvedForName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   
@@ -314,7 +307,6 @@ export default function IngredientsPage() {
 
   const handleEdit = (ingredient: Ingredient) => {
     setEditingIngredient(ingredient);
-    setNutritionLookupStatus(null);
     setNutritionResolvedForName((ingredient.name || '').trim().toLowerCase());
     setFormData({
       ...createEmptyIngredientForm(ingredient.location_id || locationId),
@@ -355,7 +347,6 @@ export default function IngredientsPage() {
 
   const handleAddNew = () => {
     setEditingIngredient(null);
-    setNutritionLookupStatus(null);
     setNutritionResolvedForName('');
     setFormData(createEmptyIngredientForm(locationId));
   };
@@ -368,7 +359,6 @@ export default function IngredientsPage() {
 
     if (!query) {
       const message = 'Enter an ingredient name before fetching nutrition.';
-      setNutritionLookupStatus({ tone: 'warning', text: message });
       if (requireResult) {
         alert(message);
       }
@@ -376,9 +366,6 @@ export default function IngredientsPage() {
     }
 
     try {
-      setIsLookingUpNutrition(true);
-      setNutritionLookupStatus(null);
-
       const response = await ingredientsService.lookupNutrition(query);
       const nutrition = response.data;
 
@@ -388,7 +375,6 @@ export default function IngredientsPage() {
 
       if (nutrition.item_count === 0) {
         const message = 'No CalorieNinjas match was found for this ingredient name.';
-        setNutritionLookupStatus({ tone: 'warning', text: message });
         if (requireResult) {
           alert(message);
         }
@@ -402,24 +388,14 @@ export default function IngredientsPage() {
 
       setNutritionResolvedForName(query.toLowerCase());
 
-      setNutritionLookupStatus({
-        tone: 'success',
-        text: nutrition.item_count > 1
-          ? `Auto-filled from ${nutrition.item_count} CalorieNinjas matches. Combined values were applied.`
-          : `Auto-filled from CalorieNinjas: ${nutrition.matched_name || query}.`,
-      });
-
       return nextFormData;
     } catch (error) {
       console.error('Failed to fetch ingredient nutrition:', error);
       const message = getLookupErrorMessage(error);
-      setNutritionLookupStatus({ tone: 'error', text: message });
       if (requireResult) {
         alert(message);
       }
       return null;
-    } finally {
-      setIsLookingUpNutrition(false);
     }
   };
 
@@ -608,7 +584,6 @@ export default function IngredientsPage() {
                 const nextName = e.target.value;
                 const hasNameChanged = nextName.trim().toLowerCase() !== formData.name.trim().toLowerCase();
 
-                setNutritionLookupStatus(null);
                 setFormData({
                   ...formData,
                   name: nextName,
@@ -637,43 +612,10 @@ export default function IngredientsPage() {
           </div>
 
           <div>
-            <div className="flex flex-col gap-3 mb-1.5 sm:flex-row sm:items-center sm:justify-between">
+            <div className="mb-3 flex items-center justify-between gap-3">
               <label className="text-xs font-semibold text-gray-700">Nutrition Values</label>
-              <div className="flex items-center gap-3">
-                <span className="text-[11px] text-gray-400">Saved per 100g</span>
-                <button
-                  type="button"
-                  onClick={() => void fetchNutritionForForm(formData)}
-                  disabled={isLookingUpNutrition || !formData.name.trim()}
-                  className={`inline-flex items-center gap-2 rounded-xl px-3 py-2 text-xs font-semibold transition-colors ${
-                    isLookingUpNutrition || !formData.name.trim()
-                      ? 'bg-gray-100 text-gray-400 cursor-not-allowed'
-                      : 'bg-emerald-50 text-emerald-700 hover:bg-emerald-100'
-                  }`}
-                >
-                  {isLookingUpNutrition ? (
-                    <Loader2 className="w-3.5 h-3.5 animate-spin" />
-                  ) : (
-                    <Search className="w-3.5 h-3.5" />
-                  )}
-                  <span>{isLookingUpNutrition ? 'Fetching...' : 'Auto-fill from API'}</span>
-                </button>
-              </div>
+              <span className="text-[11px] text-gray-400">Saved per 100g</span>
             </div>
-            <p className="mb-3 text-[11px] text-gray-500">Macros are pulled from CalorieNinjas using the ingredient name and saved per 100g.</p>
-            {nutritionLookupStatus && (
-              <div
-                className={`mb-3 rounded-xl border px-4 py-3 text-xs font-medium ${
-                  nutritionLookupStatus.tone === 'success'
-                    ? 'border-emerald-200 bg-emerald-50 text-emerald-700'
-                    : nutritionLookupStatus.tone === 'warning'
-                      ? 'border-amber-200 bg-amber-50 text-amber-700'
-                      : 'border-red-200 bg-red-50 text-red-700'
-                }`}
-              >
-                {nutritionLookupStatus.text}
-              </div>
-            )}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-4 gap-3">
               {nutritionFieldConfig.map((field) => (
                 <div key={field.key} className="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-4">
