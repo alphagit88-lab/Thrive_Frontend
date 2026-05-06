@@ -104,6 +104,28 @@ export interface Ingredient {
   photos?: IngredientPhoto[];
 }
 
+export interface IngredientNutritionLookupItem {
+  name: string | null;
+  serving_size_g: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fats: number | null;
+  kcal: number | null;
+}
+
+export interface IngredientNutritionLookup {
+  source: string;
+  query: string;
+  item_count: number;
+  matched_name: string | null;
+  serving_size_g: number | null;
+  protein: number | null;
+  carbs: number | null;
+  fats: number | null;
+  kcal: number | null;
+  items: IngredientNutritionLookupItem[];
+}
+
 // Menu Item Photo
 export interface MenuItemPhoto {
   id: string;
