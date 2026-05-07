@@ -40,7 +40,7 @@ export const settingsService = {
       const response = await apiClient.get<ApiResponse<FoodType>>(`/settings/types/${id}`);
       return response.data;
     },
-    create: async (data: { category_id: string; name: string; location_id?: string }): Promise<ApiResponse<FoodType>> => {
+    create: async (data: { category_id: string; name: string; variants?: string[]; location_id?: string }): Promise<ApiResponse<FoodType>> => {
       const response = await apiClient.post<ApiResponse<FoodType>>('/settings/types', data);
       return response.data;
     },

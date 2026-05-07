@@ -6,7 +6,7 @@ import { locationsService } from '@/services/locations.service';
 import { FoodCategory, FoodType, Specification, CookType, Location } from '@/types';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
-import { Plus, MoreVertical, Pencil, Trash2, Settings, UtensilsCrossed, Tag, ChefHat, Sparkles, MapPin } from 'lucide-react';
+import { Plus, MoreVertical, Pencil, Trash2, Settings, UtensilsCrossed, Tag, ChefHat, Sparkles, MapPin, X } from 'lucide-react';
 
 export default function SettingsPage() {
   // Locations
@@ -36,9 +36,34 @@ export default function SettingsPage() {
 
   // Forms
   const [categoryForm, setCategoryForm] = useState({ name: '', display_order: 0, show_specification: true, show_cook_type: true });
-  const [typeForm, setTypeForm] = useState({ category_id: '', name: '' });
+  const [typeForm, setTypeForm] = useState({ category_id: '', name: '', variants: [] as string[] });
+  const [typeVariantInput, setTypeVariantInput] = useState('');
   const [specForm, setSpecForm] = useState({ food_type_id: '', name: '' });
   const [cookTypeForm, setCookTypeForm] = useState({ category_id: '', name: '' });
+
+  const addVariantToTypeForm = () => {
+    const nextVariant = typeVariantInput.replace(/\s+/g, ' ').trim();
+    if (!nextVariant) return;
+
+    setTypeForm((prev) => {
+      if (prev.variants.some((variant) => variant.toLowerCase() === nextVariant.toLowerCase())) {
+        return prev;
+      }
+
+      return {
+        ...prev,
+        variants: [...prev.variants, nextVariant],
+      };
+    });
+    setTypeVariantInput('');
+  };
+
+  const removeVariantFromTypeForm = (variantToRemove: string) => {
+    setTypeForm((prev) => ({
+      ...prev,
+      variants: prev.variants.filter((variant) => variant !== variantToRemove),
+    }));
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -109,7 +134,8 @@ export default function SettingsPage() {
 
   const handleEditType = (type: FoodType) => {
     setEditingType(type);
-    setTypeForm({ category_id: type.category_id || '', name: type.name });
+    setTypeForm({ category_id: type.category_id || '', name: type.name, variants: type.variants || [] });
+    setTypeVariantInput('');
     setTypeModalOpen(true);
     setOpenMenu(null);
   };
@@ -194,14 +220,20 @@ export default function SettingsPage() {
 
   const handleCreateType = async () => {
     try {
+      const normalizedVariants = typeForm.variants
+        .map((variant) => variant.replace(/\s+/g, ' ').trim())
+        .filter(Boolean);
+
       if (editingType) {
         await settingsService.types.update(editingType.id, {
           ...typeForm,
+          variants: normalizedVariants,
           location_id: selectedLocationId || undefined,
         });
       } else {
         await settingsService.types.create({
           ...typeForm,
+          variants: normalizedVariants,
           location_id: selectedLocationId || undefined,
         });
       }
@@ -261,7 +293,8 @@ export default function SettingsPage() {
   const resetTypeModal = () => {
     setTypeModalOpen(false);
     setEditingType(null);
-    setTypeForm({ category_id: '', name: '' });
+    setTypeForm({ category_id: '', name: '', variants: [] });
+    setTypeVariantInput('');
   };
 
   const resetSpecModal = () => {
@@ -451,6 +484,18 @@ export default function SettingsPage() {
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 truncate">{type.name}</h3>
                       {type.category_name && <p className="text-xs text-gray-400 mt-0.5 truncate">{type.category_name}</p>}
+                      {type.variants?.length ? (
+                        <div className="flex flex-wrap gap-1.5 mt-2">
+                          {type.variants.map((variant) => (
+                            <span
+                              key={`${type.id}-${variant}`}
+                              className="inline-flex items-center px-2 py-0.5 rounded-full bg-green-50 text-green-700 text-[11px] font-semibold border border-green-200"
+                            >
+                              {variant}
+                            </span>
+                          ))}
+                        </div>
+                      ) : null}
                     </div>
                     <div className="relative ml-2">
                       <button onClick={(e) => handleMenuClick('type', type.id, e)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
@@ -697,6 +742,57 @@ export default function SettingsPage() {
               onChange={(e) => setTypeForm({ ...typeForm, name: e.target.value })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
             />
+          </div>
+          <div>
+            <label className="block text-sm font-semibold text-gray-700 mb-2">Variants</label>
+            <div className="flex flex-col gap-3">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  placeholder="Add variant"
+                  value={typeVariantInput}
+                  onChange={(e) => setTypeVariantInput(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                      e.preventDefault();
+                      addVariantToTypeForm();
+                    }
+                  }}
+                  className="flex-1 px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-green-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
+                />
+                <button
+                  type="button"
+                  onClick={addVariantToTypeForm}
+                  className="px-4 py-3 rounded-xl bg-green-50 text-green-700 font-semibold border-2 border-green-200 hover:bg-green-100 transition-all duration-200"
+                >
+                  Add
+                </button>
+              </div>
+              {typeForm.variants.length ? (
+                <div className="flex flex-wrap gap-2 p-3 bg-gray-50 rounded-xl border-2 border-gray-200">
+                  {typeForm.variants.map((variant) => (
+                    <span
+                      key={variant}
+                      className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-white text-gray-700 border border-gray-200 text-sm font-medium"
+                    >
+                      {variant}
+                      <button
+                        type="button"
+                        onClick={() => removeVariantFromTypeForm(variant)}
+                        className="text-gray-400 hover:text-red-500 transition-colors"
+                        aria-label={`Remove ${variant}`}
+                      >
+                        <X className="w-3.5 h-3.5" />
+                      </button>
+                    </span>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-xs text-gray-400 italic bg-gray-50 p-3 rounded-xl border-2 border-dashed border-gray-200">
+                  Add variants here if this food type needs an option above the cut selection.
+                </p>
+              )}
+            </div>
           </div>
         </form>
       </Modal>
