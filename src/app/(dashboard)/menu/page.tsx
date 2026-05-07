@@ -9,6 +9,8 @@ import { MenuItem, MenuItemForm, FoodCategory, FoodType, Specification, CookType
 import Tabs from '@/components/Tabs';
 import { Plus, MoreVertical, Upload, X, Pencil, Trash2, Save, UtensilsCrossed, Search, ChefHat, Info } from 'lucide-react';
 
+const ALL_COOK_TYPE_CATEGORY_ID = 'all';
+
 export default function MenuPage() {
   const [locationId, setLocationId] = useState<string>('');
   const hasInitialized = useRef(false);
@@ -125,11 +127,12 @@ export default function MenuPage() {
         .filter(Boolean) as string[]
     );
 
+    if (!locationId) {
+      return;
+    }
+
     categoryIds.forEach((categoryId) => {
-      Promise.all([
-        settingsService.types.getAll(categoryId, locationId),
-        settingsService.cookTypes.getAll(categoryId, locationId),
-      ]).then(([typesRes, cookTypesRes]) => {
+      settingsService.types.getAll(categoryId, locationId).then((typesRes) => {
         if (typesRes.success && typesRes.data) {
           setFoodTypes((prev) => {
             // Deduplicate by ID
@@ -138,17 +141,15 @@ export default function MenuPage() {
             return [...prev, ...newTypes];
           });
         }
-        if (cookTypesRes.success && cookTypesRes.data) {
-          setCookTypes((prev) => {
-            // Deduplicate by ID
-            const existingIds = new Set(prev.map((ct) => ct.id));
-            const newCookTypes = (cookTypesRes.data || []).filter((ct) => !existingIds.has(ct.id));
-            return [...prev, ...newCookTypes];
-          });
-        }
       });
     });
-  }, [editingItems]);
+
+    settingsService.cookTypes.getAll(undefined, locationId).then((cookTypesRes) => {
+      if (cookTypesRes.success && cookTypesRes.data) {
+        setCookTypes(cookTypesRes.data);
+      }
+    });
+  }, [editingItems, locationId]);
 
   useEffect(() => {
     // Load specifications when food type changes
@@ -456,7 +457,25 @@ export default function MenuPage() {
 
   const getItemCookTypes = (categoryId?: string) => {
     if (!categoryId) return [];
-    return cookTypes.filter((ct) => ct.category_id === categoryId);
+    const matchingCookTypes = [...cookTypes].sort((a, b) => {
+      if (a.category_id === categoryId && b.category_id !== categoryId) return -1;
+      if (a.category_id !== categoryId && b.category_id === categoryId) return 1;
+      return a.name.localeCompare(b.name);
+    });
+    const dedupedCookTypes = new Map<string, CookType>();
+
+    matchingCookTypes.forEach((cookType) => {
+      if (cookType.category_id !== categoryId && cookType.category_id !== ALL_COOK_TYPE_CATEGORY_ID) {
+        return;
+      }
+
+      const key = cookType.name.replace(/\s+/g, ' ').trim().toLowerCase();
+      if (!dedupedCookTypes.has(key)) {
+        dedupedCookTypes.set(key, cookType);
+      }
+    });
+
+    return Array.from(dedupedCookTypes.values());
   };
 
   return (

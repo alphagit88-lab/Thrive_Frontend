@@ -8,6 +8,7 @@ import Tabs from '@/components/Tabs';
 import { Plus, MoreVertical, Pencil, Trash2, Save, Apple, Package } from 'lucide-react';
 
 type NutritionField = 'protein' | 'carbs' | 'fats' | 'kcal';
+const ALL_COOK_TYPE_CATEGORY_ID = 'all';
 
 interface IngredientFormLocal extends Omit<IngredientForm, NutritionField> {
   name: string;
@@ -130,6 +131,28 @@ const getNutritionItems = (ingredient: Pick<Ingredient, NutritionField>) =>
 const toggleSelection = (items: string[], value: string) =>
   items.includes(value) ? items.filter((item) => item !== value) : [...items, value];
 
+const filterCookTypesForCategory = (cookTypes: CookType[], categoryId: string) => {
+  const normalizedCookTypes = [...cookTypes].sort((a, b) => {
+    if (a.category_id === categoryId && b.category_id !== categoryId) return -1;
+    if (a.category_id !== categoryId && b.category_id === categoryId) return 1;
+    return a.name.localeCompare(b.name);
+  });
+  const dedupedCookTypes = new Map<string, CookType>();
+
+  normalizedCookTypes.forEach((cookType) => {
+    if (cookType.category_id !== categoryId && cookType.category_id !== ALL_COOK_TYPE_CATEGORY_ID) {
+      return;
+    }
+
+    const key = cookType.name.replace(/\s+/g, ' ').trim().toLowerCase();
+    if (!dedupedCookTypes.has(key)) {
+      dedupedCookTypes.set(key, cookType);
+    }
+  });
+
+  return Array.from(dedupedCookTypes.values());
+};
+
 export default function IngredientsPage() {
   const [categories, setCategories] = useState<FoodCategory[]>([]);
   const [activeCategory, setActiveCategory] = useState<string>('');
@@ -247,9 +270,9 @@ export default function IngredientsPage() {
 
   const loadCookTypes = async (categoryId: string) => {
     try {
-      const response = await settingsService.cookTypes.getAll(categoryId, locationId);
+      const response = await settingsService.cookTypes.getAll(undefined, locationId);
       if (response.success && response.data) {
-        setCookTypes(response.data);
+        setCookTypes(filterCookTypesForCategory(response.data, categoryId));
       }
     } catch (error) {
       console.error('Failed to load cook types:', error);
