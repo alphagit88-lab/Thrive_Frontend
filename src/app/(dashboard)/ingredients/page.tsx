@@ -63,6 +63,7 @@ const createEmptyIngredientForm = (locationId = ''): IngredientFormLocal => ({
   food_type_id: '',
   specification_ids: [],
   cook_type_ids: [],
+  variants: [],
   name: '',
   description: '',
   protein: '',
@@ -125,6 +126,9 @@ const getNutritionItems = (ingredient: Pick<Ingredient, NutritionField>) =>
       value: ingredient[field.key],
     }))
     .filter((field) => field.value !== null && field.value !== undefined);
+
+const toggleSelection = (items: string[], value: string) =>
+  items.includes(value) ? items.filter((item) => item !== value) : [...items, value];
 
 export default function IngredientsPage() {
   const [categories, setCategories] = useState<FoodCategory[]>([]);
@@ -284,14 +288,17 @@ export default function IngredientsPage() {
   };
 
   const handleToggleId = (field: 'specification_ids' | 'cook_type_ids', id: string) => {
-    const current = [...formData[field]];
-    const idx = current.indexOf(id);
-    if (idx > -1) {
-      current.splice(idx, 1);
-    } else {
-      current.push(id);
-    }
-    setFormData({ ...formData, [field]: current });
+    setFormData((prev) => ({
+      ...prev,
+      [field]: toggleSelection(prev[field], id),
+    }));
+  };
+
+  const handleToggleVariant = (variant: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      variants: toggleSelection(prev.variants, variant),
+    }));
   };
 
   const handleQuantityChange = (index: number, field: string, value: string | number | boolean) => {
@@ -313,6 +320,7 @@ export default function IngredientsPage() {
       food_type_id: ingredient.food_type_id,
       specification_ids: ingredient.specification_ids || [],
       cook_type_ids: ingredient.cook_type_ids || [],
+      variants: ingredient.variants || [],
       name: ingredient.name || '',
       description: ingredient.description || '',
       protein: formatNutritionInputValue(ingredient.protein),
@@ -644,7 +652,12 @@ export default function IngredientsPage() {
             <select
               value={formData.food_type_id}
               onChange={(e) => {
-                setFormData({ ...formData, food_type_id: e.target.value, specification_ids: [] });
+                setFormData((prev) => ({
+                  ...prev,
+                  food_type_id: e.target.value,
+                  specification_ids: [],
+                  variants: [],
+                }));
               }}
               className="w-full px-4 py-2.5 border-2 border-gray-200 rounded-xl focus:ring-2 focus:ring-black focus:border-transparent outline-none transition-all duration-200 bg-gray-50 hover:bg-white"
             >
@@ -712,14 +725,29 @@ export default function IngredientsPage() {
               <p className="text-xs text-gray-400 italic">Select a type first</p>
             ) : currentFoodType?.variants?.length ? (
               <div className="flex flex-wrap gap-2">
-                {currentFoodType.variants.map((variant) => (
-                  <span
-                    key={`${currentFoodType.id}-${variant}`}
-                    className="inline-flex items-center px-3 py-2 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-sm font-medium text-emerald-700"
-                  >
-                    {variant}
-                  </span>
-                ))}
+                {currentFoodType.variants.map((variant) => {
+                  const selected = formData.variants.includes(variant);
+
+                  return (
+                    <button
+                      key={`${currentFoodType.id}-${variant}`}
+                      type="button"
+                      onClick={() => handleToggleVariant(variant)}
+                      className={`flex items-center gap-2 px-3 py-2 rounded-xl border-2 text-sm font-medium transition-all ${
+                        selected
+                          ? 'border-emerald-500 bg-emerald-500 text-white'
+                          : 'border-emerald-200 bg-emerald-50 text-emerald-700 hover:border-emerald-400'
+                      }`}
+                    >
+                      <span className={`w-4 h-4 rounded border flex items-center justify-center shrink-0 transition-colors ${
+                        selected ? 'bg-white border-white' : 'bg-white border-emerald-200'
+                      }`}>
+                        {selected && <span className="w-2 h-2 bg-emerald-500 rounded-sm block" />}
+                      </span>
+                      {variant}
+                    </button>
+                  );
+                })}
               </div>
             ) : (
               <p className="text-xs text-gray-400 italic">No variants configured for this type</p>
@@ -936,6 +964,15 @@ export default function IngredientsPage() {
                     <div className="flex flex-wrap gap-1.5 mb-2">
                       {ing.specification_names.map((name, i) => (
                         <span key={i} className="inline-flex items-center px-2.5 py-1 bg-blue-50 text-blue-700 rounded-lg text-xs font-medium">
+                          {name}
+                        </span>
+                      ))}
+                    </div>
+                  )}
+                  {ing.variants && ing.variants.length > 0 && (
+                    <div className="flex flex-wrap gap-1.5 mb-2">
+                      {ing.variants.map((name, i) => (
+                        <span key={`${ing.id}-variant-${i}-${name}`} className="inline-flex items-center px-2.5 py-1 bg-emerald-50 text-emerald-700 rounded-lg text-xs font-medium">
                           {name}
                         </span>
                       ))}

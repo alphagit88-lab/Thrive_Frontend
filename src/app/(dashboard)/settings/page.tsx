@@ -65,6 +65,8 @@ export default function SettingsPage() {
     }));
   };
 
+  const normalizeCookTypeName = (value: string) => value.replace(/\s+/g, ' ').trim();
+
   // Close dropdown when clicking outside
   useEffect(() => {
     const handleClickOutside = () => setOpenMenu(null);
@@ -91,7 +93,6 @@ export default function SettingsPage() {
     if (selectedLocationId) {
       loadAll(selectedLocationId);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedLocationId]);
 
   const loadAll = async (locationId: string) => {
@@ -265,15 +266,40 @@ export default function SettingsPage() {
   };
 
   const handleCreateCookType = async () => {
+    const normalizedCookTypeName = normalizeCookTypeName(cookTypeForm.name);
+
+    if (!cookTypeForm.category_id) {
+      alert('Please select a category');
+      return;
+    }
+
+    if (!normalizedCookTypeName) {
+      alert('Please enter a cook type');
+      return;
+    }
+
+    const duplicateCookType = cookTypes.find((cookType) =>
+      cookType.category_id === cookTypeForm.category_id &&
+      cookType.id !== editingCookType?.id &&
+      normalizeCookTypeName(cookType.name).toLowerCase() === normalizedCookTypeName.toLowerCase()
+    );
+
+    if (duplicateCookType) {
+      alert(`"${normalizedCookTypeName}" already exists in ${duplicateCookType.category_name || 'this category'}`);
+      return;
+    }
+
     try {
       if (editingCookType) {
         await settingsService.cookTypes.update(editingCookType.id, {
           ...cookTypeForm,
+          name: normalizedCookTypeName,
           location_id: selectedLocationId || undefined,
         });
       } else {
         await settingsService.cookTypes.create({
           ...cookTypeForm,
+          name: normalizedCookTypeName,
           location_id: selectedLocationId || undefined,
         });
       }
@@ -310,6 +336,29 @@ export default function SettingsPage() {
   };
 
   const currentLocation = locations.find(l => l.id === selectedLocationId);
+  const normalizedCookTypeName = normalizeCookTypeName(cookTypeForm.name);
+  const selectedCookTypeCategory = categories.find((category) => category.id === cookTypeForm.category_id);
+  const sortedCookTypes = [...cookTypes].sort((a, b) => {
+    const nameComparison = a.name.localeCompare(b.name);
+    if (nameComparison !== 0) return nameComparison;
+    return (a.category_name || '').localeCompare(b.category_name || '');
+  });
+  const cookTypesInSelectedCategory = cookTypeForm.category_id
+    ? sortedCookTypes.filter((cookType) => cookType.category_id === cookTypeForm.category_id)
+    : [];
+  const reusableCookTypes = cookTypeForm.category_id
+    ? sortedCookTypes.filter((cookType) => cookType.category_id !== cookTypeForm.category_id)
+    : [];
+  const duplicateCookType = normalizedCookTypeName
+    ? cookTypes.find((cookType) =>
+        cookType.category_id === cookTypeForm.category_id &&
+        cookType.id !== editingCookType?.id &&
+        normalizeCookTypeName(cookType.name).toLowerCase() === normalizedCookTypeName.toLowerCase()
+      ) || null
+    : null;
+  const selectedReusableCookTypeId = reusableCookTypes.find(
+    (cookType) => normalizeCookTypeName(cookType.name).toLowerCase() === normalizedCookTypeName.toLowerCase()
+  )?.id || '';
 
   if (loading && !selectedLocationId) {
     return (
@@ -849,7 +898,12 @@ export default function SettingsPage() {
         footer={
           <div className="flex items-center gap-3">
             <Button variant="outline" onClick={resetCookTypeModal} className="px-6 py-2.5">Cancel</Button>
-            <Button variant="primary" onClick={handleCreateCookType} className="px-6 py-2.5 bg-linear-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-md shadow-red-500/30">
+            <Button
+              variant="primary"
+              onClick={handleCreateCookType}
+              disabled={!cookTypeForm.category_id || !normalizedCookTypeName || !!duplicateCookType}
+              className="px-6 py-2.5 bg-linear-to-r from-red-500 to-red-600 hover:from-red-600 hover:to-red-700 shadow-md shadow-red-500/30 disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:from-red-500 disabled:hover:to-red-600"
+            >
               {editingCookType ? 'Update' : 'Add Cook Type'}
             </Button>
           </div>
@@ -876,11 +930,62 @@ export default function SettingsPage() {
           </div>
           <div>
             <label className="block text-sm font-semibold text-gray-700 mb-2">Enter Cook Type <span className="text-red-500">*</span></label>
-            <input type="text" required placeholder="Enter Cook Type"
+            <input type="text" required placeholder="Enter or select cook type"
               value={cookTypeForm.name}
               onChange={(e) => setCookTypeForm({ ...cookTypeForm, name: e.target.value })}
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white"
             />
+            {duplicateCookType ? (
+              <p className="mt-2 text-sm font-medium text-red-600">
+                This cook type already exists in {selectedCookTypeCategory?.name || duplicateCookType.category_name || 'this category'}.
+              </p>
+            ) : null}
+          </div>
+          <div className="rounded-2xl border-2 border-gray-200 bg-gray-50/60 p-4">
+            <div>
+              <p className="text-sm font-semibold text-gray-800">Existing Cook Types</p>
+            </div>
+            {cookTypeForm.category_id && selectedCookTypeCategory ? (
+              <>
+                {cookTypesInSelectedCategory.length > 0 ? (
+                  <div className="mt-4 flex flex-wrap gap-2">
+                    {cookTypesInSelectedCategory.map((cookType) => (
+                      <span
+                        key={cookType.id}
+                        className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-sm font-medium text-gray-700"
+                      >
+                        {cookType.name}
+                      </span>
+                    ))}
+                  </div>
+                ) : null}
+
+                {reusableCookTypes.length > 0 ? (
+                  <div className="mt-4">
+                    <select
+                      value={selectedReusableCookTypeId}
+                      onChange={(e) => {
+                        const selectedExistingCookType = reusableCookTypes.find((cookType) => cookType.id === e.target.value);
+                        if (!selectedExistingCookType) return;
+
+                        setCookTypeForm((prev) => ({
+                          ...prev,
+                          name: selectedExistingCookType.name,
+                        }));
+                      }}
+                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-white hover:bg-white cursor-pointer"
+                    >
+                      <option value="">Select cook type to copy</option>
+                      {reusableCookTypes.map((cookType) => (
+                        <option key={cookType.id} value={cookType.id}>
+                          {cookType.name}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                ) : null}
+              </>
+            ) : null}
           </div>
         </form>
       </Modal>
