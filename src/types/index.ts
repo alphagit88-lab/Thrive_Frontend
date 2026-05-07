@@ -33,6 +33,7 @@ export interface FoodType {
   location_id?: string;
   category_id: string;
   name: string;
+  variants?: string[];
   created_at: string;
   updated_at: string;
   category_name?: string;

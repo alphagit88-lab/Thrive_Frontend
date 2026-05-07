@@ -463,6 +463,7 @@ export default function IngredientsPage() {
   }, [openMenu]);
 
   const currentCategory = categories.find((c) => c.id === activeCategory);
+  const currentFoodType = foodTypes.find((type) => type.id === formData.food_type_id);
   const categoryIngredients = ingredients.filter(
     (ing) => {
       if (!currentCategory) return false;
@@ -705,6 +706,26 @@ export default function IngredientsPage() {
           </div>
 
           {/* Specification — checkbox group */}
+          <div>
+            <label className="text-xs font-semibold text-gray-700 block mb-2">Variants</label>
+            {!formData.food_type_id ? (
+              <p className="text-xs text-gray-400 italic">Select a type first</p>
+            ) : currentFoodType?.variants?.length ? (
+              <div className="flex flex-wrap gap-2">
+                {currentFoodType.variants.map((variant) => (
+                  <span
+                    key={`${currentFoodType.id}-${variant}`}
+                    className="inline-flex items-center px-3 py-2 rounded-xl border-2 border-emerald-200 bg-emerald-50 text-sm font-medium text-emerald-700"
+                  >
+                    {variant}
+                  </span>
+                ))}
+              </div>
+            ) : (
+              <p className="text-xs text-gray-400 italic">No variants configured for this type</p>
+            )}
+          </div>
+
           {currentCategory?.show_specification && (
             <div>
               <label className="text-xs font-semibold text-gray-700 block mb-2">Specification</label>
