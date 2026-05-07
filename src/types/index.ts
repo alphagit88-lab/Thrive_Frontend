@@ -87,6 +87,7 @@ export interface Ingredient {
   food_type_id: string;
   specification_ids?: string[];
   cook_type_ids?: string[];
+  variants?: string[];
   name?: string;
   description?: string;
   protein?: number | null;
@@ -274,6 +275,7 @@ export interface IngredientForm {
   food_type_id: string;
   specification_ids: string[];
   cook_type_ids: string[];
+  variants: string[];
   name?: string;
   description?: string;
   protein?: number | null;
