@@ -8,6 +8,9 @@ import Button from '@/components/Button';
 import Modal from '@/components/Modal';
 import { Plus, MoreVertical, Pencil, Trash2, Settings, UtensilsCrossed, Tag, ChefHat, Sparkles, MapPin, X } from 'lucide-react';
 
+const ALL_COOK_TYPE_CATEGORY_ID = 'all';
+const ALL_COOK_TYPE_CATEGORY_LABEL = 'All';
+
 export default function SettingsPage() {
   // Locations
   const [locations, setLocations] = useState<Location[]>([]);
@@ -66,6 +69,13 @@ export default function SettingsPage() {
   };
 
   const normalizeCookTypeName = (value: string) => value.replace(/\s+/g, ' ').trim();
+  const getCookTypeCategoryName = (cookType: Pick<CookType, 'category_id' | 'category_name'>) => {
+    if (cookType.category_id === ALL_COOK_TYPE_CATEGORY_ID) {
+      return ALL_COOK_TYPE_CATEGORY_LABEL;
+    }
+
+    return cookType.category_name || categories.find((category) => category.id === cookType.category_id)?.name || '';
+  };
 
   // Close dropdown when clicking outside
   useEffect(() => {
@@ -278,6 +288,52 @@ export default function SettingsPage() {
       return;
     }
 
+    if (cookTypeForm.category_id === ALL_COOK_TYPE_CATEGORY_ID) {
+      if (editingCookType) {
+        alert('Please choose a specific category when editing a cook type');
+        return;
+      }
+
+      if (categories.length === 0) {
+        alert('No categories available for this location');
+        return;
+      }
+
+      const existingCookTypeCategoryIds = new Set(
+        cookTypes
+          .filter(
+            (cookType) =>
+              normalizeCookTypeName(cookType.name).toLowerCase() === normalizedCookTypeName.toLowerCase()
+          )
+          .map((cookType) => cookType.category_id)
+      );
+
+      const categoriesToCreate = categories.filter((category) => !existingCookTypeCategoryIds.has(category.id));
+
+      if (categoriesToCreate.length === 0) {
+        alert(`"${normalizedCookTypeName}" already exists in all categories`);
+        return;
+      }
+
+      try {
+        await Promise.all(
+          categoriesToCreate.map((category) =>
+            settingsService.cookTypes.create({
+              category_id: category.id,
+              name: normalizedCookTypeName,
+              location_id: selectedLocationId || undefined,
+            })
+          )
+        );
+        resetCookTypeModal();
+        loadAll(selectedLocationId);
+      } catch {
+        alert('Failed to save cook type');
+      }
+
+      return;
+    }
+
     const duplicateCookType = cookTypes.find((cookType) =>
       cookType.category_id === cookTypeForm.category_id &&
       cookType.id !== editingCookType?.id &&
@@ -285,7 +341,7 @@ export default function SettingsPage() {
     );
 
     if (duplicateCookType) {
-      alert(`"${normalizedCookTypeName}" already exists in ${duplicateCookType.category_name || 'this category'}`);
+      alert(`"${normalizedCookTypeName}" already exists in ${getCookTypeCategoryName(duplicateCookType) || 'this category'}`);
       return;
     }
 
@@ -337,28 +393,39 @@ export default function SettingsPage() {
 
   const currentLocation = locations.find(l => l.id === selectedLocationId);
   const normalizedCookTypeName = normalizeCookTypeName(cookTypeForm.name);
-  const selectedCookTypeCategory = categories.find((category) => category.id === cookTypeForm.category_id);
+  const selectedCookTypeCategoryName =
+    cookTypeForm.category_id === ALL_COOK_TYPE_CATEGORY_ID
+      ? ALL_COOK_TYPE_CATEGORY_LABEL
+      : categories.find((category) => category.id === cookTypeForm.category_id)?.name || '';
   const sortedCookTypes = [...cookTypes].sort((a, b) => {
     const nameComparison = a.name.localeCompare(b.name);
     if (nameComparison !== 0) return nameComparison;
-    return (a.category_name || '').localeCompare(b.category_name || '');
+    return getCookTypeCategoryName(a).localeCompare(getCookTypeCategoryName(b));
   });
-  const cookTypesInSelectedCategory = cookTypeForm.category_id
-    ? sortedCookTypes.filter((cookType) => cookType.category_id === cookTypeForm.category_id)
+  const matchingCookTypes = normalizedCookTypeName
+    ? cookTypes.filter(
+        (cookType) =>
+          cookType.id !== editingCookType?.id &&
+          normalizeCookTypeName(cookType.name).toLowerCase() === normalizedCookTypeName.toLowerCase()
+      )
     : [];
-  const reusableCookTypes = cookTypeForm.category_id
-    ? sortedCookTypes.filter((cookType) => cookType.category_id !== cookTypeForm.category_id)
-    : [];
-  const duplicateCookType = normalizedCookTypeName
-    ? cookTypes.find((cookType) =>
-        cookType.category_id === cookTypeForm.category_id &&
-        cookType.id !== editingCookType?.id &&
-        normalizeCookTypeName(cookType.name).toLowerCase() === normalizedCookTypeName.toLowerCase()
-      ) || null
+  const existingAllCookTypeCategoryIds = new Set(matchingCookTypes.map((cookType) => cookType.category_id));
+  const remainingAllCookTypeCategories = categories.filter((category) => !existingAllCookTypeCategoryIds.has(category.id));
+  const duplicateCookType = normalizedCookTypeName && cookTypeForm.category_id
+    ? cookTypeForm.category_id === ALL_COOK_TYPE_CATEGORY_ID
+      ? remainingAllCookTypeCategories.length === 0
+        ? matchingCookTypes[0] || null
+        : null
+      : matchingCookTypes.find((cookType) => cookType.category_id === cookTypeForm.category_id) || null
     : null;
-  const selectedReusableCookTypeId = reusableCookTypes.find(
-    (cookType) => normalizeCookTypeName(cookType.name).toLowerCase() === normalizedCookTypeName.toLowerCase()
-  )?.id || '';
+  const partiallyExistingAllCookTypeNames =
+    cookTypeForm.category_id === ALL_COOK_TYPE_CATEGORY_ID &&
+    matchingCookTypes.length > 0 &&
+    remainingAllCookTypeCategories.length > 0
+      ? categories
+          .filter((category) => existingAllCookTypeCategoryIds.has(category.id))
+          .map((category) => category.name)
+      : [];
 
   if (loading && !selectedLocationId) {
     return (
@@ -668,7 +735,7 @@ export default function SettingsPage() {
                 <p className="text-sm text-gray-400 mt-1">Add cook types for this location</p>
               </div>
             ) : (
-              cookTypes.map((cook) => (
+              sortedCookTypes.map((cook) => (
                 <div
                   key={cook.id}
                   className={`group relative border-2 border-gray-200 rounded-xl p-4 bg-linear-to-br from-white to-gray-50 hover:border-red-300 hover:shadow-lg transition-all duration-200 transform hover:scale-105 ${openMenu?.type === 'cookType' && openMenu?.id === cook.id ? 'z-30' : 'z-0'}`}
@@ -676,7 +743,9 @@ export default function SettingsPage() {
                   <div className="flex items-center justify-between">
                     <div className="flex-1 min-w-0">
                       <h3 className="font-semibold text-gray-800 truncate">{cook.name}</h3>
-                      {cook.category_name && <p className="text-xs text-gray-400 mt-0.5 truncate">{cook.category_name}</p>}
+                      {getCookTypeCategoryName(cook) && (
+                        <p className="text-xs text-gray-400 mt-0.5 truncate">{getCookTypeCategoryName(cook)}</p>
+                      )}
                     </div>
                     <div className="relative ml-2">
                       <button onClick={(e) => handleMenuClick('cookType', cook.id, e)} className="p-1.5 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg transition-all duration-200">
@@ -923,6 +992,9 @@ export default function SettingsPage() {
               className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-gray-50 hover:bg-white cursor-pointer"
             >
               <option value="">Select category</option>
+              {!editingCookType ? (
+                <option value={ALL_COOK_TYPE_CATEGORY_ID}>{ALL_COOK_TYPE_CATEGORY_LABEL}</option>
+              ) : null}
               {categories.map((cat) => (
                 <option key={cat.id} value={cat.id}>{cat.name}</option>
               ))}
@@ -937,54 +1009,12 @@ export default function SettingsPage() {
             />
             {duplicateCookType ? (
               <p className="mt-2 text-sm font-medium text-red-600">
-                This cook type already exists in {selectedCookTypeCategory?.name || duplicateCookType.category_name || 'this category'}.
+                This cook type already exists in {getCookTypeCategoryName(duplicateCookType) || selectedCookTypeCategoryName || 'this category'}.
               </p>
-            ) : null}
-          </div>
-          <div className="rounded-2xl border-2 border-gray-200 bg-gray-50/60 p-4">
-            <div>
-              <p className="text-sm font-semibold text-gray-800">Existing Cook Types</p>
-            </div>
-            {cookTypeForm.category_id && selectedCookTypeCategory ? (
-              <>
-                {cookTypesInSelectedCategory.length > 0 ? (
-                  <div className="mt-4 flex flex-wrap gap-2">
-                    {cookTypesInSelectedCategory.map((cookType) => (
-                      <span
-                        key={cookType.id}
-                        className="inline-flex items-center rounded-full border border-gray-200 bg-white px-3 py-1 text-sm font-medium text-gray-700"
-                      >
-                        {cookType.name}
-                      </span>
-                    ))}
-                  </div>
-                ) : null}
-
-                {reusableCookTypes.length > 0 ? (
-                  <div className="mt-4">
-                    <select
-                      value={selectedReusableCookTypeId}
-                      onChange={(e) => {
-                        const selectedExistingCookType = reusableCookTypes.find((cookType) => cookType.id === e.target.value);
-                        if (!selectedExistingCookType) return;
-
-                        setCookTypeForm((prev) => ({
-                          ...prev,
-                          name: selectedExistingCookType.name,
-                        }));
-                      }}
-                      className="w-full px-4 py-3 border-2 border-gray-200 rounded-xl focus:outline-none focus:ring-2 focus:ring-red-500 focus:border-transparent transition-all duration-200 bg-white hover:bg-white cursor-pointer"
-                    >
-                      <option value="">Select cook type to copy</option>
-                      {reusableCookTypes.map((cookType) => (
-                        <option key={cookType.id} value={cookType.id}>
-                          {cookType.name}
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-                ) : null}
-              </>
+            ) : partiallyExistingAllCookTypeNames.length > 0 ? (
+              <p className="mt-2 text-sm font-medium text-amber-600">
+                Already exists in {partiallyExistingAllCookTypeNames.join(', ')}. Saving will add it to the remaining categories.
+              </p>
             ) : null}
           </div>
         </form>
