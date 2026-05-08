@@ -1,19 +1,22 @@
 'use client';
 
-import { useEffect, useState, useRef, startTransition, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import Image from 'next/image';
 import { menuService } from '@/services/menu.service';
 import { settingsService } from '@/services/settings.service';
 import { ingredientsService } from '@/services/ingredients.service';
 import { MenuItem, MenuItemForm, FoodCategory, FoodType, Specification, CookType, Ingredient } from '@/types';
 import Tabs from '@/components/Tabs';
-import { Plus, MoreVertical, Upload, X, Pencil, Trash2, Save, UtensilsCrossed, Search, ChefHat, Info } from 'lucide-react';
+import { Plus, MoreVertical, Upload, X, Pencil, Trash2, Save, UtensilsCrossed, Search, ChefHat } from 'lucide-react';
+import { useActiveLocation } from '@/hooks/useActiveLocation';
 
 const ALL_COOK_TYPE_CATEGORY_ID = 'all';
+type EditableMenuItemIngredient = NonNullable<NonNullable<MenuItemForm['ingredients']>[number]> & {
+  ingredient_name?: string;
+};
 
 export default function MenuPage() {
-  const [locationId, setLocationId] = useState<string>('');
-  const hasInitialized = useRef(false);
+  const { locationId } = useActiveLocation();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -32,19 +35,6 @@ export default function MenuPage() {
     { id: 'list', label: 'List' },
     { id: 'add', label: 'Add' },
   ];
-
-  // Load locationId from localStorage on client-side only (prevents hydration error)
-  useEffect(() => {
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      const savedLocationId = localStorage.getItem('locationId');
-      if (savedLocationId) {
-        startTransition(() => {
-          setLocationId(savedLocationId);
-        });
-      }
-    }
-  }, []);
 
   const loadMenuItems = useCallback(async () => {
     try {
@@ -78,7 +68,7 @@ export default function MenuPage() {
             prep_workout: item.prep_workout || '',
             status: item.status,
             photos: item.photos?.map((p: { photo_url: string }) => p.photo_url) || [],
-            ingredients: item.ingredients?.map((ing: any) => ({
+            ingredients: item.ingredients?.map((ing): EditableMenuItemIngredient => ({
               ingredient_id: ing.ingredient_id,
               ingredient_quantity_id: ing.ingredient_quantity_id || undefined,
               custom_quantity: ing.custom_quantity || undefined,
@@ -441,10 +431,6 @@ export default function MenuPage() {
     );
   }
 
-  const getItemCategory = (categoryId?: string) => {
-    return categories.find((c) => c.id === categoryId);
-  };
-
   const getItemFoodTypes = (categoryId?: string) => {
     if (!categoryId) return [];
     return foodTypes.filter((ft) => ft.category_id === categoryId);
@@ -551,7 +537,6 @@ export default function MenuPage() {
               const itemData = editingItems[item.id];
               if (!itemData) return null;
 
-              const category = getItemCategory(itemData.food_category_id);
               const itemFoodTypes = getItemFoodTypes(itemData.food_category_id);
               const itemSpecifications = getItemSpecifications(itemData.food_type_id);
               const itemCookTypes = getItemCookTypes(itemData.food_category_id);
@@ -832,11 +817,12 @@ export default function MenuPage() {
                         {itemData.ingredients?.map((ing, idx) => {
                           const fullIngredient = availableIngredients.find(i => i.id === ing.ingredient_id);
                           const quantities = fullIngredient?.quantities || [];
+                          const editableIngredient = ing as EditableMenuItemIngredient;
 
                           return (
                             <div key={`${item.id}-ing-${idx}`} className="flex flex-col gap-2 p-3 bg-gray-50 rounded-xl border border-gray-100">
                               <div className="flex items-center justify-between">
-                                <span className="font-medium text-gray-800 text-sm">{fullIngredient?.name || (ing as any).ingredient_name || 'Unknown Ingredient'}</span>
+                                <span className="font-medium text-gray-800 text-sm">{fullIngredient?.name || editableIngredient.ingredient_name || 'Unknown Ingredient'}</span>
                                 <button
                                   type="button"
                                   onClick={() => handleRemoveIngredient(item.id, idx)}

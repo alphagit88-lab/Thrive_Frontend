@@ -77,8 +77,25 @@ export default function SignupPage() {
         password: formData.password,
         contact_number: formData.contact_number.trim() || undefined,
       });
-    } catch (err: any) {
-      setError(err.response?.data?.error || err.message || 'Signup failed. Please try again.');
+    } catch (error: unknown) {
+      const errorMessage = (
+        typeof error === 'object' &&
+        error !== null &&
+        'response' in error &&
+        typeof error.response === 'object' &&
+        error.response !== null &&
+        'data' in error.response &&
+        typeof error.response.data === 'object' &&
+        error.response.data !== null &&
+        'error' in error.response.data &&
+        typeof error.response.data.error === 'string'
+      )
+        ? error.response.data.error
+        : error instanceof Error
+          ? error.message
+          : 'Signup failed. Please try again.';
+
+      setError(errorMessage);
     } finally {
       setLoading(false);
     }
@@ -111,7 +128,7 @@ export default function SignupPage() {
             <CheckCircle2 className="w-5 h-5 text-green-600 mt-0.5 flex-shrink-0" />
             <div>
               <p className="text-sm font-semibold text-green-800">Auto-Activation</p>
-              <p className="text-xs text-green-700 mt-0.5">Your account will be automatically activated and you'll be logged in immediately.</p>
+              <p className="text-xs text-green-700 mt-0.5">Your account will be automatically activated and you&apos;ll be logged in immediately.</p>
             </div>
           </div>
 

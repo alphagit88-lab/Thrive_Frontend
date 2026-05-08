@@ -7,7 +7,7 @@ import DataTable from '@/components/DataTable';
 import Button from '@/components/Button';
 import Modal from '@/components/Modal';
 import Badge from '@/components/Badge';
-import { Plus, Pencil, Trash2, Search, MapPin, Building2 } from 'lucide-react';
+import { Plus, Pencil, Trash2, Search, MapPin, Building2, Store, Mail } from 'lucide-react';
 
 export default function LocationsPage() {
   const [locations, setLocations] = useState<Location[]>([]);
@@ -104,6 +104,32 @@ export default function LocationsPage() {
       },
     },
     { key: 'name', label: 'Location Name' },
+    {
+      key: 'franchise_owner_name',
+      label: 'Franchise',
+      render: (_value: unknown, row: Location) => {
+        if (!row.franchise_owner_name) {
+          return (
+            <span className="text-sm text-gray-400">Not assigned</span>
+          );
+        }
+
+        return (
+          <div className="flex flex-col gap-1">
+            <div className="flex items-center gap-2">
+              <Store className="w-4 h-4 text-green-600" />
+              <span className="text-sm font-semibold text-gray-800">{row.franchise_owner_name}</span>
+            </div>
+            {row.franchise_email && (
+              <div className="flex items-center gap-2 text-xs text-gray-500">
+                <Mail className="w-3.5 h-3.5" />
+                <span>{row.franchise_email}</span>
+              </div>
+            )}
+          </div>
+        );
+      },
+    },
     { key: 'currency', label: 'Currency' },
     { key: 'location_type', label: 'Location Type' },
     {

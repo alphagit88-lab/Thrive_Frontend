@@ -12,6 +12,8 @@ import Modal from '@/components/Modal';
 import Tabs from '@/components/Tabs';
 import { Plus, Pencil, Trash2, MoreVertical, Users, Search, MapPin } from 'lucide-react';
 
+type LocationChangedEvent = CustomEvent<{ locationId?: string }>;
+
 export default function UsersPage() {
   const { user: loggedInUser } = useAuth();
   const [users, setUsers] = useState<User[]>([]);
@@ -136,9 +138,10 @@ export default function UsersPage() {
     };
 
     // Also set up a custom event listener if the app uses one for faster switching
-    const handleLocationChange = (e: any) => {
-      if (loggedInUser?.role === 'admin' && e.detail?.locationId) {
-        setLocationId(e.detail.locationId);
+    const handleLocationChange = (event: Event) => {
+      const customEvent = event as LocationChangedEvent;
+      if (loggedInUser?.role === 'admin' && customEvent.detail?.locationId) {
+        setLocationId(customEvent.detail.locationId);
       }
     };
 

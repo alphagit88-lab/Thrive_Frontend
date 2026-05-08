@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, startTransition } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { ordersService } from '@/services/orders.service';
 import { menuService } from '@/services/menu.service';
 import { customersService } from '@/services/customers.service';
@@ -11,11 +11,12 @@ import Badge from '@/components/Badge';
 import Modal from '@/components/Modal';
 import Tabs from '@/components/Tabs';
 import { Plus, X, ShoppingCart, Search, Receipt } from 'lucide-react';
+import { useActiveLocation } from '@/hooks/useActiveLocation';
 
 export default function OrdersPage() {
   const [orders, setOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [locationId, setLocationId] = useState<string>('');
+  const { locationId } = useActiveLocation();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('list');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,7 +28,6 @@ export default function OrdersPage() {
     notes: '',
     items: [],
   });
-  const hasInitialized = useRef(false);
 
   const subTabs = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -35,18 +35,6 @@ export default function OrdersPage() {
     { id: 'list', label: 'List' },
     { id: 'add', label: 'Add' },
   ];
-
-  useEffect(() => {
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      const savedLocationId = localStorage.getItem('locationId');
-      if (savedLocationId) {
-        startTransition(() => {
-          setLocationId(savedLocationId);
-        });
-      }
-    }
-  }, []);
 
   const loadOrders = useCallback(async (locId: string) => {
     try {

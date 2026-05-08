@@ -5,6 +5,7 @@ import { Search, Bell, User, ChevronDown, LogOut, MapPin } from 'lucide-react';
 import { Location } from '@/types';
 import { locationsService } from '@/services/locations.service';
 import { useAuth } from '@/contexts/AuthContext';
+import { filterLocationsForUser, isAdminUser } from '@/lib/access';
 
 interface HeaderProps {
   showSearch?: boolean;
@@ -23,16 +24,25 @@ export default function Header({
       try {
         const response = await locationsService.getAll();
         if (response.success && response.data) {
-          setLocations(response.data);
-          
-          // Get saved location or default to first location
+          const scopedLocations = filterLocationsForUser(response.data, user);
+          setLocations(scopedLocations);
+
+          if (!scopedLocations.length) {
+            setLocationId('');
+            return;
+          }
+
+          if (!isAdminUser(user)) {
+            setLocationId(user?.location_id || scopedLocations[0].id);
+            localStorage.setItem('locationId', user?.location_id || scopedLocations[0].id);
+            return;
+          }
+
           const savedLocationId = localStorage.getItem('locationId');
-          if (savedLocationId && response.data.find((loc) => loc.id === savedLocationId)) {
-            // Use saved location if it still exists
+          if (savedLocationId && scopedLocations.find((loc) => loc.id === savedLocationId)) {
             setLocationId(savedLocationId);
-          } else if (response.data.length > 0) {
-            // Auto-select first location as default
-            const firstLocation = response.data[0];
+          } else {
+            const firstLocation = scopedLocations[0];
             setLocationId(firstLocation.id);
             localStorage.setItem('locationId', firstLocation.id);
           }
@@ -43,14 +53,15 @@ export default function Header({
     };
 
     loadLocations();
-  }, []);
+  }, [user]);
 
   const handleLocationChange = (id: string) => {
     setLocationId(id);
     localStorage.setItem('locationId', id);
-    // Reload page to update all location-dependent data
-    window.location.reload();
+    window.dispatchEvent(new CustomEvent('locationChanged', { detail: { locationId: id } }));
   };
+
+  const selectedLocation = locations.find((location) => location.id === locationId);
 
   return (
     <header className="bg-white border-b border-gray-200 shadow-sm sticky top-0 z-40">
@@ -75,7 +86,7 @@ export default function Header({
           {/* Right: Location, Notifications, User */}
           <div className="flex items-center gap-3">
             {/* Location Selector */}
-            {locations.length > 0 && (
+            {locations.length > 0 && isAdminUser(user) && (
               <div className="relative group">
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <MapPin className="h-4 w-4 text-green-600" />
@@ -93,6 +104,13 @@ export default function Header({
                   ))}
                 </select>
                 <ChevronDown className="absolute right-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-green-600 pointer-events-none" />
+              </div>
+            )}
+
+            {selectedLocation && !isAdminUser(user) && (
+              <div className="flex items-center gap-2 px-4 py-2.5 border-2 border-green-500 rounded-xl bg-green-50 text-gray-900 font-semibold min-w-[200px]">
+                <MapPin className="h-4 w-4 text-green-600" />
+                <span className="truncate">{selectedLocation.name}</span>
               </div>
             )}
 

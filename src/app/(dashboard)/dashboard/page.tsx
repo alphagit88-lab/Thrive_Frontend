@@ -7,21 +7,19 @@ import { ordersService } from '@/services/orders.service';
 import { Order, OrderStats } from '@/types';
 import Badge from '@/components/Badge';
 import { BarChart3, TrendingUp, Package, DollarSign, Clock } from 'lucide-react';
+import { useActiveLocation } from '@/hooks/useActiveLocation';
 
 export default function DashboardPage() {
   const [stats, setStats] = useState<OrderStats | null>(null);
   const [recentOrders, setRecentOrders] = useState<Order[]>([]);
   const [loading, setLoading] = useState(true);
-  const [locationId, setLocationId] = useState<string>('');
+  const { locationId } = useActiveLocation();
 
   useEffect(() => {
-    // Get location from localStorage or use first available
-    const savedLocationId = localStorage.getItem('locationId');
-    if (savedLocationId) {
-      setLocationId(savedLocationId);
-      loadData(savedLocationId);
+    if (locationId) {
+      loadData(locationId);
     }
-  }, []);
+  }, [locationId]);
 
   const loadData = async (locId: string) => {
     try {

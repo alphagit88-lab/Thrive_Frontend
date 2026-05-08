@@ -82,8 +82,8 @@ export default function DataTable<T extends { id: string }>({
                 } ${index % 2 === 0 ? "bg-white" : "bg-gray-50/30"}`}
               >
                 {columns.map((column, colIndex) => {
-                  // FIX: Cast row to 'any' to allow indexing with string keys
-                  const value = (row as any)[column.key];
+                  const rowValues = row as Record<string, unknown>;
+                  const value = rowValues[String(column.key)];
                   return (
                     <td
                       key={`${row.id}-col-${colIndex}-${String(column.key)}`}
