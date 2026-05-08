@@ -5,7 +5,7 @@ import { ingredientsService } from '@/services/ingredients.service';
 import { settingsService } from '@/services/settings.service';
 import { Ingredient, IngredientForm, IngredientNutritionLookup, FoodCategory, FoodType, Specification, CookType } from '@/types';
 import Tabs from '@/components/Tabs';
-import { Plus, MoreVertical, Pencil, Trash2, Save, Apple, Package } from 'lucide-react';
+import { Plus, MoreVertical, Pencil, Trash2, Save, Apple, Package, X } from 'lucide-react';
 import { useActiveLocation } from '@/hooks/useActiveLocation';
 
 type NutritionField = 'protein' | 'carbs' | 'fats' | 'kcal';
@@ -163,6 +163,7 @@ export default function IngredientsPage() {
   const [cookTypes, setCookTypes] = useState<CookType[]>([]);
   const [openMenu, setOpenMenu] = useState<string | null>(null);
   const [editingIngredient, setEditingIngredient] = useState<Ingredient | null>(null);
+  const [isIngredientSheetOpen, setIsIngredientSheetOpen] = useState(false);
   const [isUploading, setIsUploading] = useState(false);
   const [nutritionResolvedForName, setNutritionResolvedForName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -354,6 +355,7 @@ export default function IngredientsPage() {
         : createDefaultQuantities(),
     });
     setOpenMenu(null);
+    setIsIngredientSheetOpen(true);
   };
 
   const handleDelete = async (ingredientId: string) => {
@@ -369,10 +371,21 @@ export default function IngredientsPage() {
     }
   };
 
-  const handleAddNew = () => {
+  const resetIngredientForm = () => {
     setEditingIngredient(null);
     setNutritionResolvedForName('');
     setFormData(createEmptyIngredientForm(locationId));
+  };
+
+  const handleCloseIngredientSheet = () => {
+    setIsIngredientSheetOpen(false);
+    setOpenMenu(null);
+    resetIngredientForm();
+  };
+
+  const handleAddNew = () => {
+    resetIngredientForm();
+    setIsIngredientSheetOpen(true);
   };
 
   const fetchNutritionForForm = async (
@@ -466,7 +479,7 @@ export default function IngredientsPage() {
         await ingredientsService.create(payload);
       }
 
-      handleAddNew();
+      handleCloseIngredientSheet();
       loadData();
     } catch (error) {
       console.error('Failed to save ingredient:', error);
@@ -485,6 +498,19 @@ export default function IngredientsPage() {
       return () => document.removeEventListener('click', handleClickOutside);
     }
   }, [openMenu]);
+
+  useEffect(() => {
+    if (!isIngredientSheetOpen) {
+      return;
+    }
+
+    const originalOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = originalOverflow;
+    };
+  }, [isIngredientSheetOpen]);
 
   const currentCategory = categories.find((c) => c.id === activeCategory);
   const currentFoodType = foodTypes.find((type) => type.id === formData.food_type_id);
@@ -555,8 +581,23 @@ export default function IngredientsPage() {
         />
       )}
 
-      {/* Ingredients Form Card */}
-      <div className="mt-6 bg-white rounded-2xl shadow-lg border border-gray-100 overflow-hidden hover:shadow-xl transition-all duration-300">
+      {/* Ingredient Form Bottom Sheet */}
+      {isIngredientSheetOpen && (
+        <div className="fixed inset-0 z-50" aria-modal="true" role="dialog">
+          <div
+            className="absolute inset-0 bg-black/40 backdrop-blur-[1px]"
+            onClick={handleCloseIngredientSheet}
+          />
+          <div className="absolute inset-x-0 bottom-0 px-3 sm:px-6">
+            <div
+              className="mx-auto w-full max-w-7xl rounded-t-[28px] bg-white shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            >
+              <div className="flex justify-center pt-3">
+                <span className="h-1.5 w-14 rounded-full bg-gray-300" />
+              </div>
+              <div className="max-h-[85vh] overflow-y-auto px-1 pb-6 sm:px-0">
+                <div className="bg-white rounded-t-[28px] border border-gray-100 overflow-hidden">
 
         {/* Card Header */}
         <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100 bg-gray-50/60">
@@ -568,33 +609,43 @@ export default function IngredientsPage() {
               <p className="text-xs text-gray-400 mt-0.5">{editingIngredient.name || editingIngredient.food_type_name}</p>
             )}
           </div>
-          {editingIngredient && (
-            <div className="relative">
-              <button
-                onClick={(e) => handleMenuClick(editingIngredient.id, e)}
-                className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
-              >
-                <MoreVertical className="w-5 h-5" />
-              </button>
-              {openMenu === editingIngredient.id && (
-                <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl z-20 border border-gray-200 overflow-hidden">
-                  <button
-                    onClick={() => handleEdit(editingIngredient)}
-                    className="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
-                  >
-                    <Pencil className="w-4 h-4 mr-3 text-gray-500" /> Edit
-                  </button>
-                  <div className="border-t border-gray-100"></div>
-                  <button
-                    onClick={() => handleDelete(editingIngredient.id)}
-                    className="flex items-center w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
-                  >
-                    <Trash2 className="w-4 h-4 mr-3" /> Delete
-                  </button>
-                </div>
-              )}
-            </div>
-          )}
+          <div className="flex items-center gap-2">
+            {editingIngredient && (
+              <div className="relative">
+                <button
+                  onClick={(e) => handleMenuClick(editingIngredient.id, e)}
+                  className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+                >
+                  <MoreVertical className="w-5 h-5" />
+                </button>
+                {openMenu === editingIngredient.id && (
+                  <div className="absolute right-0 mt-2 w-48 bg-white rounded-xl shadow-xl z-20 border border-gray-200 overflow-hidden">
+                    <button
+                      onClick={() => handleEdit(editingIngredient)}
+                      className="flex items-center w-full text-left px-4 py-3 text-sm text-gray-700 hover:bg-gray-50 transition-colors"
+                    >
+                      <Pencil className="w-4 h-4 mr-3 text-gray-500" /> Edit
+                    </button>
+                    <div className="border-t border-gray-100"></div>
+                    <button
+                      onClick={() => handleDelete(editingIngredient.id)}
+                      className="flex items-center w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 transition-colors"
+                    >
+                      <Trash2 className="w-4 h-4 mr-3" /> Delete
+                    </button>
+                  </div>
+                )}
+              </div>
+            )}
+            <button
+              type="button"
+              onClick={handleCloseIngredientSheet}
+              className="text-gray-400 hover:text-gray-600 p-2 hover:bg-gray-100 rounded-lg transition-colors"
+              aria-label="Close ingredient form"
+            >
+              <X className="w-5 h-5" />
+            </button>
+          </div>
         </div>
 
         <div className="p-6 space-y-5">
@@ -905,7 +956,12 @@ export default function IngredientsPage() {
             </button>
           </div>
         </div>
-      </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Existing Ingredients List */}
       {categoryIngredients.length > 0 && (
