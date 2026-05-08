@@ -2,17 +2,19 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { 
-  BarChart3, 
-  UtensilsCrossed, 
-  Pizza, 
-  ClipboardList, 
-  Users, 
-  User, 
-  Settings, 
+import { User as AppUser } from '@/types';
+import {
+  BarChart3,
+  UtensilsCrossed,
+  Pizza,
+  ClipboardList,
+  Users,
+  User,
+  Settings,
   MapPin,
-  
+  Store,
 } from 'lucide-react';
+import { isAdminUser } from '@/lib/access';
 
 interface NavItem {
   id: string;
@@ -24,7 +26,7 @@ interface NavItem {
 interface SidebarProps {
   user?: {
     name: string;
-    role: string;
+    role: AppUser['role'];
     avatar?: string;
   };
 }
@@ -38,14 +40,25 @@ const navItems: NavItem[] = [
   { id: 'users', label: 'Users', icon: <User className="w-5 h-5" />, path: '/users' },
   { id: 'settings', label: 'Settings', icon: <Settings className="w-5 h-5" />, path: '/settings' },
   { id: 'locations', label: 'Locations', icon: <MapPin className="w-5 h-5" />, path: '/locations' },
+  { id: 'franchise', label: 'Franchise', icon: <Store className="w-5 h-5" />, path: '/franchise' },
 ];
 
 export default function Sidebar({ user }: SidebarProps) {
   const pathname = usePathname();
+  const visibleNavItems = navItems.filter((item) => {
+    if (item.id === 'franchise') {
+      return isAdminUser(user);
+    }
+
+    if (user?.role === 'franchise' && ['users', 'locations'].includes(item.id)) {
+      return false;
+    }
+
+    return true;
+  });
 
   return (
     <div className="w-64 bg-linear-to-b from-white to-gray-50 min-h-screen flex flex-col border-r border-gray-200 shadow-lg">
-      {/* Logo Section */}
       <div className="p-6 border-b border-gray-200 bg-white">
         <div className="mb-3">
           <h1 className="text-4xl font-black tracking-tighter bg-linear-to-r from-green-600 via-emerald-600 to-green-700 bg-clip-text text-transparent leading-none">
@@ -55,9 +68,8 @@ export default function Sidebar({ user }: SidebarProps) {
         <p className="text-xs font-semibold text-gray-500 uppercase tracking-wider">Admin Dashboard</p>
       </div>
 
-      {/* User Profile Card */}
       <div className="p-4 mx-4 mt-4">
-          <div className="bg-linear-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100 shadow-sm hover:shadow-md transition-shadow duration-200">
+        <div className="bg-linear-to-br from-green-50 to-emerald-50 rounded-xl p-4 border border-green-100 shadow-sm hover:shadow-md transition-shadow duration-200">
           <div className="flex items-center gap-3">
             <div className="w-12 h-12 rounded-full bg-linear-to-br from-green-500 to-green-600 flex items-center justify-center shrink-0 shadow-md ring-2 ring-white">
               <User className="w-6 h-6 text-white" />
@@ -73,13 +85,13 @@ export default function Sidebar({ user }: SidebarProps) {
         </div>
       </div>
 
-      {/* Navigation */}
       <nav className="flex-1 px-4 py-2 overflow-y-auto">
         <div className="mb-4">
           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3 px-3">Navigation</p>
           <ul className="space-y-1.5">
-            {navItems.map((item) => {
+            {visibleNavItems.map((item) => {
               const isActive = pathname === item.path || pathname?.startsWith(item.path + '/');
+
               return (
                 <li key={item.id}>
                   <Link
@@ -110,14 +122,12 @@ export default function Sidebar({ user }: SidebarProps) {
         </div>
       </nav>
 
-      {/* Footer */}
       <div className="p-4 border-t border-gray-200 bg-white">
         <div className="text-center">
-          <p className="text-xs text-gray-500">© 2026 Thrive</p>
+          <p className="text-xs text-gray-500">Copyright 2026 Thrive</p>
           <p className="text-xs text-gray-600 mt-1">Admin Dashboard</p>
         </div>
       </div>
     </div>
   );
 }
-

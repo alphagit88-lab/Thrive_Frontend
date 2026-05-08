@@ -13,6 +13,10 @@ export interface Location {
   status: 'active' | 'inactive';
   created_at: string;
   updated_at: string;
+  franchise_id?: string | null;
+  franchise_owner_name?: string | null;
+  franchise_email?: string | null;
+  franchise_status?: 'active' | 'inactive' | 'suspended' | null;
 }
 
 // Food Category
@@ -237,11 +241,38 @@ export interface User {
   email: string;
   name: string;
   contact_number?: string;
-  role: 'admin' | 'manager' | 'staff' | 'kitchen_staff';
+  role: 'admin' | 'manager' | 'staff' | 'kitchen_staff' | 'franchise';
   account_status: 'active' | 'inactive' | 'suspended';
   created_at: string;
   updated_at: string;
   location_name?: string;
+}
+
+export interface Franchise {
+  id: string;
+  user_id: string;
+  location_id: string;
+  owner_name: string;
+  email: string;
+  phone?: string;
+  owner_nic?: string | null;
+  period?: string | null;
+  start_date?: string | null;
+  address?: string | null;
+  sop_acknowledged: boolean;
+  operations_manual_acknowledged: boolean;
+  packaging_manual_acknowledged: boolean;
+  brand_guidelines_acknowledged: boolean;
+  deposit: number;
+  royalty: number;
+  account_status: 'active' | 'inactive' | 'suspended';
+  role: 'franchise';
+  location_name?: string;
+  currency?: string;
+  total_orders_today: number;
+  revenue_today: number;
+  created_at: string;
+  updated_at: string;
 }
 
 // API Response Types
@@ -338,6 +369,25 @@ export interface UserForm {
   password?: string;
   name: string;
   contact_number?: string;
-  role?: 'admin' | 'manager' | 'staff' | 'kitchen_staff';
+  role?: 'admin' | 'manager' | 'staff' | 'kitchen_staff' | 'franchise';
+}
+
+export interface FranchiseForm {
+  location_id: string;
+  email: string;
+  password?: string;
+  name: string;
+  phone?: string;
+  owner_nic?: string;
+  period?: string;
+  start_date?: string;
+  address?: string;
+  sop_acknowledged?: boolean;
+  operations_manual_acknowledged?: boolean;
+  packaging_manual_acknowledged?: boolean;
+  brand_guidelines_acknowledged?: boolean;
+  deposit?: number;
+  royalty?: number;
+  account_status?: 'active' | 'inactive' | 'suspended';
 }
 

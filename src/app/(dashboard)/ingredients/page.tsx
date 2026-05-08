@@ -6,6 +6,7 @@ import { settingsService } from '@/services/settings.service';
 import { Ingredient, IngredientForm, IngredientNutritionLookup, FoodCategory, FoodType, Specification, CookType } from '@/types';
 import Tabs from '@/components/Tabs';
 import { Plus, MoreVertical, Pencil, Trash2, Save, Apple, Package } from 'lucide-react';
+import { useActiveLocation } from '@/hooks/useActiveLocation';
 
 type NutritionField = 'protein' | 'carbs' | 'fats' | 'kcal';
 const ALL_COOK_TYPE_CATEGORY_ID = 'all';
@@ -165,21 +166,13 @@ export default function IngredientsPage() {
   const [isUploading, setIsUploading] = useState(false);
   const [nutritionResolvedForName, setNutritionResolvedForName] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
-  
-  const [locationId, setLocationId] = useState<string>('');
+  const { locationId } = useActiveLocation();
 
   const [formData, setFormData] = useState<IngredientFormLocal>(createEmptyIngredientForm());
 
   useEffect(() => {
-    const savedLocationId = localStorage.getItem('locationId');
-    if (savedLocationId) {
-      setLocationId(savedLocationId);
-      setFormData(prev => ({ ...prev, location_id: savedLocationId }));
-    }
-  }, []);
-
-  useEffect(() => {
     if (locationId) {
+      setFormData(prev => ({ ...prev, location_id: locationId }));
       loadData();
     }
   }, [locationId]);
@@ -188,7 +181,7 @@ export default function IngredientsPage() {
   useEffect(() => {
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
-        settingsService.categories.getAll().then((catRes) => {
+        settingsService.categories.getAll(locationId).then((catRes) => {
           if (catRes.success && catRes.data) {
             setCategories(catRes.data);
             if (activeCategory && !catRes.data.find(c => c.id === activeCategory)) {
@@ -203,7 +196,7 @@ export default function IngredientsPage() {
 
     document.addEventListener('visibilitychange', handleVisibilityChange);
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
-  }, [activeCategory]);
+  }, [activeCategory, locationId]);
 
   useEffect(() => {
     if (formData.food_type_id) {

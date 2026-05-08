@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState, useCallback, useRef, startTransition } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { customersService } from '@/services/customers.service';
 import { Customer, CustomerForm } from '@/types';
 import DataTable from '@/components/DataTable';
@@ -9,11 +9,12 @@ import Badge from '@/components/Badge';
 import Modal from '@/components/Modal';
 import Tabs from '@/components/Tabs';
 import { Plus, Pencil, Trash2, MoreVertical, Users, Search } from 'lucide-react';
+import { useActiveLocation } from '@/hooks/useActiveLocation';
 
 export default function CustomersPage() {
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [loading, setLoading] = useState(true);
-  const [locationId, setLocationId] = useState<string>('');
+  const { locationId } = useActiveLocation();
   const [search, setSearch] = useState('');
   const [activeTab, setActiveTab] = useState('list');
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -27,7 +28,6 @@ export default function CustomersPage() {
     account_status: 'active',
   });
   const [showActionsMenu, setShowActionsMenu] = useState<string | null>(null);
-  const hasInitialized = useRef(false);
 
   const subTabs = [
     { id: 'dashboard', label: 'Dashboard' },
@@ -35,18 +35,6 @@ export default function CustomersPage() {
     { id: 'list', label: 'List' },
     { id: 'add', label: 'Add' },
   ];
-
-  useEffect(() => {
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      const savedLocationId = localStorage.getItem('locationId');
-      if (savedLocationId) {
-        startTransition(() => {
-          setLocationId(savedLocationId);
-        });
-      }
-    }
-  }, []);
 
   const loadCustomers = useCallback(async (locId: string) => {
     try {

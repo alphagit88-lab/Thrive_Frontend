@@ -1,18 +1,25 @@
 'use client';
 
 import { useEffect } from 'react';
-import { useRouter } from 'next/navigation';
+import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import { canAccessPath } from '@/lib/access';
 
 export default function ProtectedRoute({ children }: { children: React.ReactNode }) {
   const { user, loading } = useAuth();
   const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     if (!loading && !user) {
       router.push('/login');
+      return;
     }
-  }, [user, loading, router]);
+
+    if (!loading && user && pathname && !canAccessPath(user, pathname)) {
+      router.push('/dashboard');
+    }
+  }, [user, loading, pathname, router]);
 
   if (loading) {
     return (
@@ -26,6 +33,10 @@ export default function ProtectedRoute({ children }: { children: React.ReactNode
   }
 
   if (!user) {
+    return null;
+  }
+
+  if (pathname && !canAccessPath(user, pathname)) {
     return null;
   }
 

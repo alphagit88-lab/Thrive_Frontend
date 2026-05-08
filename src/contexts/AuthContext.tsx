@@ -23,6 +23,25 @@ interface AuthContextType {
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+const syncLocationSelection = (user: User | null) => {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  if (!user?.location_id) {
+    localStorage.removeItem('locationId');
+    return;
+  }
+
+  if (user.role === 'admin') {
+    const storedLocationId = localStorage.getItem('locationId');
+    localStorage.setItem('locationId', storedLocationId || user.location_id);
+    return;
+  }
+
+  localStorage.setItem('locationId', user.location_id);
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
@@ -48,14 +67,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (response.success && response.data) {
         setUser(response.data);
+        syncLocationSelection(response.data);
       } else {
         // Invalid token, clear it
         localStorage.removeItem('token');
+        localStorage.removeItem('locationId');
         setUser(null);
       }
-    } catch (error) {
+    } catch {
       // Token invalid or expired
       localStorage.removeItem('token');
+      localStorage.removeItem('locationId');
       setUser(null);
     } finally {
       setLoading(false);
@@ -68,12 +90,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (response.success && response.data) {
         setUser(response.data.user);
+        syncLocationSelection(response.data.user);
         router.push('/dashboard');
       } else {
         throw new Error(response.error || 'Login failed');
       }
-    } catch (error: any) {
-      throw error;
+    } catch (error: unknown) {
+      throw error instanceof Error ? error : new Error('Login failed');
     }
   };
 
@@ -91,17 +114,19 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       
       if (loginResponse.success && loginResponse.data) {
         setUser(loginResponse.data.user);
+        syncLocationSelection(loginResponse.data.user);
         router.push('/dashboard');
       } else {
         throw new Error('Account created but login failed. Please try logging in.');
       }
-    } catch (error: any) {
-      throw error;
+    } catch (error: unknown) {
+      throw error instanceof Error ? error : new Error('Signup failed');
     }
   };
 
   const logout = () => {
     usersService.logout();
+    localStorage.removeItem('locationId');
     setUser(null);
     router.push('/login');
   };
